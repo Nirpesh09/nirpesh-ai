@@ -4,7 +4,7 @@ import { Sparkles, ArrowUp, Trash2, Plus } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { UserMenu } from "@/components/UserMenu";
 import { loadApps, deleteApp, newId, type SavedApp } from "@/lib/apps";
-import { loadProfile } from "@/lib/profile";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
