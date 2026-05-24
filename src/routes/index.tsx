@@ -2,7 +2,9 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Sparkles, ArrowUp, Trash2, Plus } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { UserMenu } from "@/components/UserMenu";
 import { loadApps, deleteApp, newId, type SavedApp } from "@/lib/apps";
+import { loadProfile } from "@/lib/profile";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -51,10 +53,13 @@ function Home() {
       {/* nav */}
       <header className="relative z-10 mx-auto max-w-6xl px-6 h-16 flex items-center justify-between">
         <Logo />
-        <nav className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
-          <a href="#apps" className="hover:text-foreground transition-colors">Your apps</a>
-          <a href="#ideas" className="hover:text-foreground transition-colors">Ideas</a>
-        </nav>
+        <div className="flex items-center gap-6">
+          <nav className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
+            <a href="#apps" className="hover:text-foreground transition-colors">Your apps</a>
+            <a href="#ideas" className="hover:text-foreground transition-colors">Ideas</a>
+          </nav>
+          <UserMenu />
+        </div>
       </header>
 
       {/* hero */}
