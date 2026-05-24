@@ -138,7 +138,7 @@ function Build() {
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
                   {m.role === "user" ? "You" : "Nirpesh"}
                 </div>
-                <div className="prose prose-invert prose-sm max-w-none prose-pre:hidden prose-code:text-brand">
+                <div className="text-sm leading-relaxed text-foreground/90 [&_code]:text-brand [&_code]:bg-background/50 [&_code]:px-1 [&_code]:rounded [&_p]:my-1">
                   <ReactMarkdown>{m.role === "assistant" ? stripCode(m.content) : m.content}</ReactMarkdown>
                 </div>
               </div>
