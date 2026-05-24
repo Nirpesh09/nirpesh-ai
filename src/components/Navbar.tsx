@@ -2,10 +2,10 @@ import { Link } from "@tanstack/react-router";
 import { Logo } from "./Logo";
 
 const links = [
-  { to: "/", label: "Home" },
-  { to: "/community", label: "Community" },
-  { to: "/enterprise", label: "Enterprise" },
-  { to: "/pricing", label: "Pricing" },
+  { href: "/", label: "Home" },
+  { href: "#community", label: "Community" },
+  { href: "#enterprise", label: "Enterprise" },
+  { href: "#pricing", label: "Pricing" },
 ];
 
 export function Navbar() {
