@@ -16,15 +16,13 @@ export function Navbar() {
           <Logo />
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             {links.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
+              <a
+                key={l.href}
+                href={l.href}
                 className="hover:text-foreground transition-colors"
-                activeProps={{ className: "text-foreground" }}
-                activeOptions={{ exact: true }}
               >
                 {l.label}
-              </Link>
+              </a>
             ))}
           </nav>
         </div>
