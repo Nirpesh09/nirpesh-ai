@@ -101,4 +101,9 @@
     animation: shimmer 2.2s linear infinite;
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
+  @keyframes orb-float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-6px) scale(1.04); }
+  }
+  .animate-orb-float { animation: orb-float 2.4s ease-in-out infinite; }
 }

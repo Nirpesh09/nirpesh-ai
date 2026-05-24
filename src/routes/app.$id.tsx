@@ -4,8 +4,11 @@ import { useServerFn } from "@tanstack/react-start";
 import ReactMarkdown from "react-markdown";
 import { chatWithNirpesh, type ChatMessage } from "@/lib/mistral.functions";
 import { Logo } from "@/components/Logo";
+import { UserMenu } from "@/components/UserMenu";
+import { ThinkingOrb } from "@/components/ThinkingOrb";
 import { ArrowUp, Eye, Code2, RefreshCw, ExternalLink, Check, Loader2, Sparkles } from "lucide-react";
 import { getApp, saveApp, titleFromPrompt, type SavedApp } from "@/lib/apps";
+import { loadProfile, type Profile } from "@/lib/profile";
 
 type SearchParams = { prompt?: string };
 
@@ -60,6 +63,8 @@ function AppPage() {
   const [view, setView] = useState<"thinking" | "ready">("ready");
   const [tab, setTab] = useState<"preview" | "code">("preview");
   const sentInitial = useRef(false);
+  const [profile, setProfile] = useState<Profile>({ name: "You", emoji: "🦊", color: "#a855f7" });
+  useEffect(() => { setProfile(loadProfile()); }, []);
 
   // hydrate from storage
   useEffect(() => {
@@ -148,7 +153,7 @@ function AppPage() {
         <div className="absolute inset-0 grid-bg pointer-events-none" />
         <div className="relative z-10 w-full max-w-xl">
           <div className="flex justify-center mb-8">
-            <Logo />
+            <ThinkingOrb />
           </div>
           <div className="rounded-2xl border bg-card shadow-soft p-8">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -198,7 +203,10 @@ function AppPage() {
           <span className="text-muted-foreground">/</span>
           <span className="text-sm truncate">{title}</span>
         </div>
-        <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← All apps</Link>
+        <div className="flex items-center gap-4">
+          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← All apps</Link>
+          <UserMenu />
+        </div>
       </header>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[380px_1fr] min-h-0">
@@ -214,8 +222,8 @@ function AppPage() {
                     : "bg-card border mr-6"
                 }`}
               >
-                <div className={`text-[10px] uppercase tracking-wider mb-1 ${m.role === "user" ? "text-white/70" : "text-muted-foreground"}`}>
-                  {m.role === "user" ? "You" : "Nirpesh"}
+                <div className={`text-[10px] uppercase tracking-wider mb-1 flex items-center gap-1.5 ${m.role === "user" ? "text-white/80" : "text-muted-foreground"}`}>
+                  {m.role === "user" ? <><span>{profile.emoji}</span> {profile.name}</> : "✨ Nirpesh"}
                 </div>
                 <div className="text-sm leading-relaxed [&_p]:my-1">
                   <ReactMarkdown>{m.role === "assistant" ? stripCode(m.content) : m.content}</ReactMarkdown>
