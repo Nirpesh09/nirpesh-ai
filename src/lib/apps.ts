@@ -3,7 +3,7 @@ export type SavedApp = {
   title: string;
   prompt: string;
   html: string;
-  messages: { role: "user" | "assistant"; content: string }[];
+  messages: { role: "system" | "user" | "assistant"; content: string }[];
   createdAt: number;
   updatedAt: number;
 };
