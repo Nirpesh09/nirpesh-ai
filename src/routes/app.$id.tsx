@@ -8,6 +8,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { ThinkingOrb } from "@/components/ThinkingOrb";
 import { ArrowUp, Eye, Code2, RefreshCw, ExternalLink, Check, Loader2, Sparkles } from "lucide-react";
 import { getApp, saveApp, titleFromPrompt, type SavedApp } from "@/lib/apps";
+import { loadProfile, type Profile } from "@/lib/profile";
 
 type SearchParams = { prompt?: string };
 
@@ -62,6 +63,8 @@ function AppPage() {
   const [view, setView] = useState<"thinking" | "ready">("ready");
   const [tab, setTab] = useState<"preview" | "code">("preview");
   const sentInitial = useRef(false);
+  const [profile, setProfile] = useState<Profile>({ name: "You", emoji: "🦊", color: "#a855f7" });
+  useEffect(() => { setProfile(loadProfile()); }, []);
 
   // hydrate from storage
   useEffect(() => {
