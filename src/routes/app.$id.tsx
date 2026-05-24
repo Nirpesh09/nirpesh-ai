@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import ReactMarkdown from "react-markdown";
 import { chatWithNirpesh, type ChatMessage } from "@/lib/mistral.functions";
 import { Logo } from "@/components/Logo";
+import { UserMenu } from "@/components/UserMenu";
+import { ThinkingOrb } from "@/components/ThinkingOrb";
 import { ArrowUp, Eye, Code2, RefreshCw, ExternalLink, Check, Loader2, Sparkles } from "lucide-react";
 import { getApp, saveApp, titleFromPrompt, type SavedApp } from "@/lib/apps";
 
