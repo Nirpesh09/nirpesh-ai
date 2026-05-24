@@ -222,8 +222,8 @@ function AppPage() {
                     : "bg-card border mr-6"
                 }`}
               >
-                <div className={`text-[10px] uppercase tracking-wider mb-1 ${m.role === "user" ? "text-white/70" : "text-muted-foreground"}`}>
-                  {m.role === "user" ? "You" : "Nirpesh"}
+                <div className={`text-[10px] uppercase tracking-wider mb-1 flex items-center gap-1.5 ${m.role === "user" ? "text-white/80" : "text-muted-foreground"}`}>
+                  {m.role === "user" ? <><span>{profile.emoji}</span> {profile.name}</> : "✨ Nirpesh"}
                 </div>
                 <div className="text-sm leading-relaxed [&_p]:my-1">
                   <ReactMarkdown>{m.role === "assistant" ? stripCode(m.content) : m.content}</ReactMarkdown>
