@@ -150,7 +150,7 @@ function AppPage() {
         <div className="absolute inset-0 grid-bg pointer-events-none" />
         <div className="relative z-10 w-full max-w-xl">
           <div className="flex justify-center mb-8">
-            <Logo />
+            <ThinkingOrb />
           </div>
           <div className="rounded-2xl border bg-card shadow-soft p-8">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -200,7 +200,10 @@ function AppPage() {
           <span className="text-muted-foreground">/</span>
           <span className="text-sm truncate">{title}</span>
         </div>
-        <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← All apps</Link>
+        <div className="flex items-center gap-4">
+          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← All apps</Link>
+          <UserMenu />
+        </div>
       </header>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[380px_1fr] min-h-0">
