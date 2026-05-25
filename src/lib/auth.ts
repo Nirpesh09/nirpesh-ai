@@ -22,6 +22,17 @@ export async function signIn(email: string, password: string) {
   return data;
 }
 
+export async function signInWithGoogle() {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+    },
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
@@ -33,7 +44,7 @@ export async function getUser(): Promise<AuthUser | null> {
   return {
     id: data.user.id,
     email: data.user.email ?? "",
-    displayName: data.user.user_metadata?.display_name,
+    displayName: data.user.user_metadata?.display_name || data.user.user_metadata?.full_name,
   };
 }
 
@@ -43,7 +54,9 @@ export function onAuthChange(callback: (user: AuthUser | null) => void) {
       callback({
         id: session.user.id,
         email: session.user.email ?? "",
-        displayName: session.user.user_metadata?.display_name,
+        displayName:
+          session.user.user_metadata?.display_name ||
+          session.user.user_metadata?.full_name,
       });
     } else {
       callback(null);

@@ -8,11 +8,12 @@ import { UserMenu } from "@/components/UserMenu";
 import { ModelPicker } from "@/components/ModelPicker";
 import {
   ArrowUp, Eye, Code2, RefreshCw, ExternalLink, Check, Loader2,
-  MousePointerClick, Github, X, Wand2,
+  MousePointerClick, Github, X, Wand2, ListChecks, Zap, AlertTriangle,
 } from "lucide-react";
 import { getApp, saveApp, titleFromPrompt, type SavedApp } from "@/lib/apps";
 import { loadProfile, type Profile } from "@/lib/profile";
 import { loadModel, saveModel, type ModelId } from "@/lib/models";
+import { getCredits, deductCredit, hasCredits, initCredits } from "@/lib/credits";
 
 type SearchParams = { prompt?: string };
 
@@ -33,7 +34,7 @@ const THINK_STEPS = [
   "Polishing the details…",
 ];
 
-const BLANK_HTML = `<!doctype html><html><body style="margin:0;display:grid;place-items:center;height:100vh;font-family:system-ui;color:#888;background:#fafafa">Nothing built yet</body></html>`;
+const BLANK_HTML = `<!doctype html><html><body style="margin:0;display:grid;place-items:center;height:100vh;font-family:system-ui;color:#555;background:#111">Nothing built yet</body></html>`;
 
 const EDIT_SCRIPT = `<script>(function(){
   if (window.__nirpeshInit) return; window.__nirpeshInit = true;
@@ -85,28 +86,31 @@ function stripCode(text: string): string {
   return text.replace(/```[\s\S]*?```/g, "").trim() || "Done — preview is ready.";
 }
 
-function AiMessage({ content }: { content: string }) {
+function AiMessage({ content, isPlan }: { content: string; isPlan?: boolean }) {
   const clean = stripCode(content);
   const lines = clean.split("\n").map((l) => l.trim()).filter(Boolean);
-  const bullets = lines.filter((l) => l.startsWith("•") || l.startsWith("-") || l.startsWith("*"));
-  const intro = lines.find((l) => !l.startsWith("•") && !l.startsWith("-") && !l.startsWith("*"));
+  const bullets = lines.filter((l) => l.startsWith("•") || l.startsWith("-") || l.startsWith("*") || /^\d+\./.test(l));
+  const intro = lines.find((l) => !l.startsWith("•") && !l.startsWith("-") && !l.startsWith("*") && !/^\d+\./.test(l));
 
   if (bullets.length === 0) {
-    return <p className="text-sm leading-relaxed">{clean}</p>;
+    return <p className="text-sm leading-relaxed whitespace-pre-wrap">{clean}</p>;
   }
 
   return (
     <div className="text-sm leading-relaxed space-y-2">
-      {intro && <p className="text-muted-foreground text-xs">{intro}</p>}
+      {intro && <p className="text-[#94a3b8] text-xs">{intro}</p>}
       <ul className="space-y-1.5">
         {bullets.map((b, i) => (
           <li key={i} className="flex items-start gap-2">
-            <span className="mt-0.5 h-4 w-4 rounded-full bg-gradient-brand shrink-0 grid place-items-center">
-              <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 10 10">
-                <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+            <span className={`mt-0.5 h-4 w-4 rounded-full shrink-0 grid place-items-center ${isPlan ? "bg-[#1e40af]" : "bg-gradient-brand"}`}>
+              {isPlan
+                ? <span className="text-[9px] font-bold text-white">{i + 1}</span>
+                : <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 10 10">
+                    <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+              }
             </span>
-            <span>{b.replace(/^[•\-*]\s*/, "")}</span>
+            <span className="text-[#cbd5e1]">{b.replace(/^[•\-*]\s*/, "").replace(/^\d+\.\s*/, "")}</span>
           </li>
         ))}
       </ul>
@@ -116,55 +120,50 @@ function AiMessage({ content }: { content: string }) {
 
 function ThinkingBubble({ stepIdx }: { stepIdx: number }) {
   return (
-    <div className="mr-6 rounded-2xl rounded-tl-sm border bg-card shadow-soft overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b bg-muted/30">
-        <div className="relative grid place-items-center h-7 w-7 rounded-lg bg-gradient-brand shadow-glow shrink-0">
+    <div className="rounded-2xl rounded-tl-sm border border-[#1e293b] bg-[#0f1117] overflow-hidden">
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[#1e293b] bg-[#0a0d14]">
+        <div className="relative grid place-items-center h-6 w-6 rounded-lg bg-gradient-brand shrink-0">
           <span className="absolute inset-0 rounded-lg bg-gradient-brand opacity-60 animate-ping" />
-          <span className="relative text-sm font-bold text-white z-10">N</span>
+          <span className="relative text-[11px] font-bold text-white z-10">N</span>
         </div>
-        <span className="text-xs font-medium text-muted-foreground">Nirpesh is building your app…</span>
+        <span className="text-xs font-medium text-[#64748b]">Building your app…</span>
         <Loader2 className="h-3 w-3 animate-spin text-brand ml-auto" />
       </div>
-
-      {/* Steps */}
-      <ul className="px-4 py-3 space-y-2.5">
+      <ul className="px-4 py-3 space-y-2">
         {THINK_STEPS.map((s, i) => {
           const done = i < stepIdx;
           const active = i === stepIdx;
-          const pending = i > stepIdx;
           return (
             <li key={s} className="flex items-center gap-2.5">
-              <span className={`grid place-items-center h-4 w-4 rounded-full shrink-0 transition-all duration-500 ${
-                done ? "bg-gradient-brand" : active ? "border-2 border-brand bg-brand/10" : "border border-muted-foreground/30 bg-muted"
+              <span className={`grid place-items-center h-4 w-4 rounded-full shrink-0 transition-all ${
+                done ? "bg-gradient-brand" : active ? "border-2 border-brand bg-brand/10" : "border border-[#334155]"
               }`}>
-                {done && (
-                  <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 10 10">
-                    <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
+                {done && <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
                 {active && <span className="h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />}
               </span>
-              <span className={`text-xs transition-colors duration-300 ${
-                done ? "text-foreground line-through opacity-50" : active ? "text-foreground font-medium" : pending ? "text-muted-foreground/40" : "text-muted-foreground"
-              }`}>
-                {s}
-              </span>
+              <span className={`text-xs ${done ? "text-[#475569] line-through" : active ? "text-[#e2e8f0] font-medium" : "text-[#334155]"}`}>{s}</span>
             </li>
           );
         })}
       </ul>
-
-      {/* Animated dots */}
       <div className="flex items-center gap-1 px-4 pb-3">
         {[0, 1, 2].map((i) => (
-          <span
-            key={i}
-            className="h-1.5 w-1.5 rounded-full bg-brand"
-            style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
-          />
+          <span key={i} className="h-1.5 w-1.5 rounded-full bg-brand"
+            style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
         ))}
       </div>
+    </div>
+  );
+}
+
+function CreditsBadge({ credits }: { credits: number }) {
+  const low = credits <= 3;
+  return (
+    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${
+      low ? "border-orange-500/40 bg-orange-500/10 text-orange-400" : "border-[#1e293b] bg-[#0f1117] text-[#64748b]"
+    }`}>
+      <Zap className="h-3 w-3" />
+      {credits} credit{credits !== 1 ? "s" : ""}
     </div>
   );
 }
@@ -187,11 +186,14 @@ function AppPage() {
   const [loading, setLoading] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
   const [tab, setTab] = useState<"preview" | "code">("preview");
+  const [planMode, setPlanMode] = useState(false);
+  const [credits, setCredits] = useState(10);
+  const [outOfCredits, setOutOfCredits] = useState(false);
+
   const sentInitial = useRef(false);
   const [profile, setProfile] = useState<Profile>({ name: "You", emoji: "🦊", color: "#a855f7" });
   const [model, setModel] = useState<ModelId>("nirpesh");
   const chatEndRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { setProfile(loadProfile()); setModel(loadModel()); }, []);
 
   const [editMode, setEditMode] = useState(false);
   const [picked, setPicked] = useState<Picked | null>(null);
@@ -201,12 +203,18 @@ function AppPage() {
 
   const [gh, setGh] = useState<{ status: "idle" | "pushing" | "done" | "error"; url?: string; error?: string }>({ status: "idle" });
 
-  // Auto-scroll chat to bottom
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  // Track which messages are "plan" type
+  const [planMsgIndices, setPlanMsgIndices] = useState<Set<number>>(new Set());
 
-  // Hydrate from storage
+  useEffect(() => {
+    setProfile(loadProfile());
+    setModel(loadModel());
+    initCredits();
+    setCredits(getCredits());
+  }, []);
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
+
   useEffect(() => {
     const a = getApp(id);
     if (a) {
@@ -219,7 +227,6 @@ function AppPage() {
     }
   }, [id, initial]);
 
-  // Step ticker while loading
   useEffect(() => {
     if (!loading) return;
     setStepIdx(0);
@@ -227,29 +234,16 @@ function AppPage() {
     return () => clearInterval(t);
   }, [loading]);
 
-  // Listen to iframe postMessages
   useEffect(() => {
     const onMsg = (e: MessageEvent) => {
       const d = e.data;
       if (!d || typeof d !== "object") return;
-      if (d.type === "nirpesh:select") {
-        setPicked({ id: d.id, tag: d.tag, text: d.text, outer: d.outer });
-        setDraftText(d.text);
-        setAiInstr("");
-      }
+      if (d.type === "nirpesh:select") { setPicked({ id: d.id, tag: d.tag, text: d.text, outer: d.outer }); setDraftText(d.text); setAiInstr(""); }
       if (d.type === "nirpesh:html" && typeof d.html === "string") {
-        const clean = d.html
-          .replace(/<script>\(function\(\)\{[\s\S]*?__nirpeshInit[\s\S]*?<\/script>/g, "")
-          .replace(/<style>\[data-nirpesh[\s\S]*?<\/style>/g, "")
-          .replace(/\sdata-nirpesh-(id|hover|pick)(="[^"]*")?/g, "");
+        const clean = d.html.replace(/<script>\(function\(\)\{[\s\S]*?__nirpeshInit[\s\S]*?<\/script>/g, "").replace(/<style>\[data-nirpesh[\s\S]*?<\/style>/g, "").replace(/\sdata-nirpesh-(id|hover|pick)(="[^"]*")?/g, "");
         setHtml(clean);
         const now = Date.now();
-        const saved: SavedApp = {
-          id, title: existing.current?.title ?? title,
-          prompt: existing.current?.prompt ?? initial ?? "",
-          html: clean, messages,
-          createdAt: existing.current?.createdAt ?? now, updatedAt: now,
-        };
+        const saved: SavedApp = { id, title: existing.current?.title ?? title, prompt: existing.current?.prompt ?? initial ?? "", html: clean, messages, createdAt: existing.current?.createdAt ?? now, updatedAt: now };
         existing.current = saved;
         saveApp(saved);
       }
@@ -264,32 +258,53 @@ function AppPage() {
 
   const previewHtml = useMemo(() => injectEditScript(html), [html]);
 
-  const run = async (text: string) => {
+  const run = async (text: string, isPlan = false) => {
+    if (!hasCredits()) { setOutOfCredits(true); return; }
+
     const userMsg: ChatMessage = { role: "user", content: text };
     const next = [...messages, userMsg];
     setMessages(next);
     setInput("");
     setLoading(true);
+
+    // Deduct credit
+    deductCredit();
+    setCredits(getCredits());
+
+    let actualText = text;
+    if (isPlan) {
+      actualText = `Before building the app, create a detailed plan for: "${text}". List the components, features, layout, color scheme, and interactions you will include. Number each item. Do NOT write any code yet — just the plan. End with "Ready to build when you confirm."`;
+    }
+
+    const queryMsgs: ChatMessage[] = isPlan
+      ? [...messages, { role: "user", content: actualText }]
+      : next;
+
     try {
-      const res = await chat({ data: { messages: next, model } });
+      const res = await chat({ data: { messages: queryMsgs, model } });
       const assistantMsg: ChatMessage = { role: "assistant", content: res.content };
       const finalMsgs = [...next, assistantMsg];
       setMessages(finalMsgs);
-      const code = extractHtml(res.content) ?? html;
-      setHtml(code);
-      const now = Date.now();
-      const saved: SavedApp = {
-        id,
-        title: existing.current?.title ?? titleFromPrompt(text),
-        prompt: existing.current?.prompt ?? text,
-        html: code,
-        messages: finalMsgs,
-        createdAt: existing.current?.createdAt ?? now,
-        updatedAt: now,
-      };
-      existing.current = saved;
-      saveApp(saved);
-      setTitle(saved.title);
+
+      if (isPlan) {
+        setPlanMsgIndices((prev) => new Set([...prev, finalMsgs.length - 1]));
+      } else {
+        const code = extractHtml(res.content) ?? html;
+        setHtml(code);
+        const now = Date.now();
+        const saved: SavedApp = {
+          id,
+          title: existing.current?.title ?? titleFromPrompt(text),
+          prompt: existing.current?.prompt ?? text,
+          html: code,
+          messages: finalMsgs,
+          createdAt: existing.current?.createdAt ?? now,
+          updatedAt: now,
+        };
+        existing.current = saved;
+        saveApp(saved);
+        setTitle(saved.title);
+      }
     } catch (e) {
       setMessages([...next, { role: "assistant", content: `⚠️ ${e instanceof Error ? e.message : "Something went wrong"}` }]);
     } finally {
@@ -310,7 +325,7 @@ function AppPage() {
     e.preventDefault();
     const text = input.trim();
     if (!text || loading) return;
-    run(text);
+    run(text, planMode);
   };
 
   const saveTextEdit = () => {
@@ -340,89 +355,106 @@ function AppPage() {
   const pickModel = (m: ModelId) => { setModel(m); saveModel(m); };
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col bg-[#080b10]">
       {/* Header */}
-      <header className="h-14 border-b flex items-center justify-between px-4 shrink-0 bg-card/50 backdrop-blur">
+      <header className="h-13 border-b border-[#1e293b] flex items-center justify-between px-4 shrink-0 bg-[#0a0d14]/90 backdrop-blur">
         <div className="flex items-center gap-3 min-w-0">
           <Logo loading={loading} />
-          <span className="text-muted-foreground">/</span>
-          <span className="text-sm truncate max-w-[180px]">{title}</span>
+          <span className="text-[#334155]">/</span>
+          <span className="text-sm text-[#94a3b8] truncate max-w-[160px]">{title}</span>
         </div>
         <div className="flex items-center gap-2">
+          <CreditsBadge credits={credits} />
           <button
             onClick={onGithub}
             disabled={gh.status === "pushing"}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border bg-card hover:bg-accent text-xs font-medium disabled:opacity-50"
-            title={gh.status === "done" ? gh.url : "Push to GitHub"}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#1e293b] bg-[#0f1117] hover:bg-[#1e293b] text-[#94a3b8] text-xs font-medium disabled:opacity-50 transition-colors"
           >
             {gh.status === "pushing" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Github className="h-3.5 w-3.5" />}
-            {gh.status === "done" ? "Pushed" : gh.status === "pushing" ? "Pushing…" : "GitHub"}
+            {gh.status === "done" ? "Pushed ✓" : gh.status === "pushing" ? "Pushing…" : "GitHub"}
           </button>
           {gh.status === "done" && gh.url && (
             <a href={gh.url} target="_blank" rel="noreferrer" className="text-xs text-brand hover:underline">Open</a>
           )}
-          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground ml-1">← All apps</Link>
+          <Link to="/" className="text-sm text-[#64748b] hover:text-[#94a3b8] ml-1 transition-colors">← Back</Link>
           <UserMenu />
         </div>
       </header>
 
       {gh.status === "error" && (
-        <div className="bg-destructive/10 text-destructive text-xs px-4 py-2 border-b">{gh.error}</div>
+        <div className="bg-destructive/10 text-destructive text-xs px-4 py-2 border-b border-[#1e293b]">{gh.error}</div>
       )}
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[400px_1fr] min-h-0">
-        {/* ── CHAT PANEL ── */}
-        <aside className="border-r flex flex-col min-h-0 bg-card/20">
+        {/* ── CHAT PANEL (dark) ── */}
+        <aside className="border-r border-[#1e293b] flex flex-col min-h-0 bg-[#080b10]">
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-            {/* Welcome message if empty */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
             {messages.length === 0 && !loading && (
               <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-12">
                 <div className="relative grid place-items-center h-16 w-16 rounded-2xl bg-gradient-brand shadow-glow">
                   <span className="text-2xl font-bold text-white">N</span>
                 </div>
                 <div>
-                  <p className="font-semibold">Nirpesh is ready</p>
-                  <p className="text-sm text-muted-foreground mt-1">Type a message to start building</p>
+                  <p className="font-semibold text-[#e2e8f0]">Nirpesh is ready</p>
+                  <p className="text-sm text-[#475569] mt-1">Type below to start building</p>
+                </div>
+                <div className="flex items-center gap-2 mt-2 text-xs text-[#475569]">
+                  <Zap className="h-3.5 w-3.5 text-brand" />
+                  <span>You have <span className="text-brand font-semibold">{credits} free credits</span> to use</span>
                 </div>
               </div>
             )}
 
             {messages.map((m, i) => (
               <div key={i} className={`flex flex-col gap-1 ${m.role === "user" ? "items-end" : "items-start"}`}>
-                {/* Sender label */}
+                {/* Label */}
                 <div className={`flex items-center gap-1.5 px-1 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
                   {m.role === "assistant" ? (
                     <span className="grid place-items-center h-5 w-5 rounded-md bg-gradient-brand shrink-0">
                       <span className="text-[10px] font-bold text-white">N</span>
                     </span>
                   ) : (
-                    <span
-                      className="grid place-items-center h-5 w-5 rounded-md text-sm shrink-0"
-                      style={{ backgroundColor: profile.color }}
-                    >
+                    <span className="grid place-items-center h-5 w-5 rounded-md text-sm shrink-0" style={{ backgroundColor: profile.color }}>
                       <span className="text-[10px]">{profile.emoji}</span>
                     </span>
                   )}
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  <span className="text-[10px] uppercase tracking-wider text-[#475569] font-medium">
                     {m.role === "assistant" ? "Nirpesh" : profile.name}
                   </span>
+                  {planMsgIndices.has(i) && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-medium">Plan</span>
+                  )}
                 </div>
 
                 {/* Bubble */}
-                <div className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                <div className={`max-w-[90%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                   m.role === "user"
                     ? "bg-gradient-brand text-white rounded-tr-sm shadow-glow"
-                    : "bg-card border rounded-tl-sm shadow-soft"
+                    : "bg-[#0f1117] border border-[#1e293b] rounded-tl-sm text-[#cbd5e1]"
                 }`}>
                   {m.role === "assistant"
-                    ? <AiMessage content={m.content} />
+                    ? <AiMessage content={m.content} isPlan={planMsgIndices.has(i)} />
                     : <p>{m.content}</p>}
                 </div>
+
+                {/* If this was a plan, show "Build it now" button */}
+                {planMsgIndices.has(i) && m.role === "assistant" && (
+                  <button
+                    onClick={() => {
+                      const userPrompt = messages[i - 1]?.content ?? "";
+                      run(`Now build the app as planned: ${userPrompt}`);
+                    }}
+                    disabled={loading}
+                    className="ml-7 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-gradient-brand text-white hover:opacity-90 transition-opacity disabled:opacity-50 shadow-glow"
+                  >
+                    <Zap className="h-3 w-3" /> Build it now
+                  </button>
+                )}
               </div>
             ))}
 
-            {/* Thinking bubble — shows INSIDE the chat while AI works */}
+            {/* In-chat thinking bubble */}
             {loading && (
               <div className="flex flex-col gap-1 items-start">
                 <div className="flex items-center gap-1.5 px-1">
@@ -431,11 +463,20 @@ function AppPage() {
                     <span className="relative text-[10px] font-bold text-white z-10">N</span>
                   </span>
                   <span className="text-[10px] uppercase tracking-wider text-brand font-medium animate-pulse">
-                    Nirpesh · Building…
+                    {planMode ? "Planning…" : "Building…"}
                   </span>
                 </div>
-                <div className="max-w-[88%]">
-                  <ThinkingBubble stepIdx={stepIdx} />
+                <div className="max-w-[90%]"><ThinkingBubble stepIdx={stepIdx} /></div>
+              </div>
+            )}
+
+            {/* Out of credits warning */}
+            {outOfCredits && (
+              <div className="rounded-2xl border border-orange-500/30 bg-orange-500/10 p-4 flex items-start gap-3">
+                <AlertTriangle className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-orange-300">Out of credits</p>
+                  <p className="text-xs text-orange-400/70 mt-0.5">Sign up or upgrade to continue building apps.</p>
                 </div>
               </div>
             )}
@@ -444,29 +485,44 @@ function AppPage() {
           </div>
 
           {/* Input */}
-          <form onSubmit={onSubmit} className="p-3 border-t bg-card/60 backdrop-blur">
-            <div className="rounded-xl border bg-background focus-within:border-brand/50 transition-colors shadow-soft">
+          <form onSubmit={onSubmit} className="p-3 border-t border-[#1e293b] bg-[#0a0d14]">
+            {/* Plan mode toggle */}
+            <div className="flex items-center gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => setPlanMode((v) => !v)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
+                  planMode
+                    ? "bg-blue-500/20 border-blue-500/40 text-blue-400"
+                    : "border-[#1e293b] bg-[#0f1117] text-[#475569] hover:text-[#64748b]"
+                }`}
+              >
+                <ListChecks className="h-3.5 w-3.5" />
+                {planMode ? "Plan mode ON" : "Plan first"}
+              </button>
+              {planMode && (
+                <span className="text-[10px] text-[#475569]">AI will plan before building</span>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-[#1e293b] bg-[#0f1117] focus-within:border-brand/40 transition-colors">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(e); }
-                }}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(e); } }}
                 rows={2}
-                placeholder={loading ? "Nirpesh is working…" : "Ask Nirpesh to change something…"}
-                className="w-full bg-transparent resize-none px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground"
+                placeholder={loading ? "Nirpesh is working…" : planMode ? "Describe your app — Nirpesh will plan it first…" : "Ask Nirpesh to build or change something…"}
+                className="w-full bg-transparent resize-none px-3 py-2.5 text-sm outline-none placeholder:text-[#334155] text-[#e2e8f0]"
                 disabled={loading}
               />
               <div className="flex items-center justify-between p-1.5 gap-2">
                 <ModelPicker value={model} onChange={pickModel} />
                 <button
                   type="submit"
-                  disabled={!input.trim() || loading}
+                  disabled={!input.trim() || loading || outOfCredits}
                   className="grid place-items-center h-8 w-8 rounded-lg bg-gradient-brand text-white disabled:opacity-30 hover:scale-105 transition-transform shadow-glow"
                 >
-                  {loading
-                    ? <Loader2 className="h-4 w-4 animate-spin" />
-                    : <ArrowUp className="h-4 w-4" strokeWidth={2.5} />}
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" strokeWidth={2.5} />}
                 </button>
               </div>
             </div>
@@ -474,103 +530,68 @@ function AppPage() {
         </aside>
 
         {/* ── PREVIEW PANEL ── */}
-        <section className="flex flex-col min-h-0 relative">
-          <div className="h-11 border-b flex items-center justify-between px-3 shrink-0 bg-card/30">
+        <section className="flex flex-col min-h-0 relative bg-[#080b10]">
+          <div className="h-11 border-b border-[#1e293b] flex items-center justify-between px-3 shrink-0 bg-[#0a0d14]">
             <div className="flex gap-1">
-              <button
-                onClick={() => setTab("preview")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs ${tab === "preview" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
+              <button onClick={() => setTab("preview")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors ${tab === "preview" ? "bg-[#1e293b] text-[#e2e8f0]" : "text-[#475569] hover:text-[#64748b]"}`}>
                 <Eye className="h-3.5 w-3.5" /> Preview
               </button>
-              <button
-                onClick={() => setTab("code")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs ${tab === "code" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
+              <button onClick={() => setTab("code")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors ${tab === "code" ? "bg-[#1e293b] text-[#e2e8f0]" : "text-[#475569] hover:text-[#64748b]"}`}>
                 <Code2 className="h-3.5 w-3.5" /> Code
               </button>
             </div>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => { setEditMode((v) => !v); setPicked(null); setTab("preview"); }}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${editMode ? "bg-gradient-brand text-white" : "hover:bg-accent text-muted-foreground"}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${editMode ? "bg-gradient-brand text-white" : "hover:bg-[#1e293b] text-[#475569]"}`}
               >
                 <MousePointerClick className="h-3.5 w-3.5" />
                 {editMode ? "Editing" : "Visual Edit"}
               </button>
-              <button onClick={() => setHtml((h) => h + " ")} title="Reload" className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground">
-                <RefreshCw className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={() => { const blob = new Blob([html], { type: "text/html" }); window.open(URL.createObjectURL(blob), "_blank"); }}
-                title="Open in new tab"
-                className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-              </button>
+              <button onClick={() => setHtml((h) => h + " ")} title="Reload" className="p-1.5 rounded-lg hover:bg-[#1e293b] text-[#475569]"><RefreshCw className="h-3.5 w-3.5" /></button>
+              <button onClick={() => { const blob = new Blob([html], { type: "text/html" }); window.open(URL.createObjectURL(blob), "_blank"); }} title="Open in new tab" className="p-1.5 rounded-lg hover:bg-[#1e293b] text-[#475569]"><ExternalLink className="h-3.5 w-3.5" /></button>
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 bg-white relative">
+          <div className="flex-1 min-h-0 relative">
             {tab === "preview" ? (
-              <iframe
-                ref={iframeRef}
-                title="preview"
-                srcDoc={previewHtml}
-                className="w-full h-full border-0"
-                sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"
-              />
+              <iframe ref={iframeRef} title="preview" srcDoc={previewHtml} className="w-full h-full border-0 bg-white" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin" />
             ) : (
-              <pre className="w-full h-full overflow-auto bg-[#0d0d0f] text-xs p-4 text-white/90 font-mono whitespace-pre-wrap">{html}</pre>
+              <pre className="w-full h-full overflow-auto bg-[#060911] text-xs p-4 text-[#7dd3fc] font-mono whitespace-pre-wrap">{html}</pre>
             )}
 
             {editMode && !picked && (
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 rounded-full bg-foreground text-background text-xs px-3 py-1.5 shadow-soft flex items-center gap-2">
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#0f1117] border border-[#1e293b] text-[#94a3b8] text-xs px-3 py-1.5 shadow-soft flex items-center gap-2">
                 <MousePointerClick className="h-3.5 w-3.5" /> Click any element to edit
               </div>
             )}
 
             {picked && (
-              <div className="absolute right-4 top-4 w-80 rounded-2xl border bg-card shadow-soft p-4 z-10">
+              <div className="absolute right-4 top-4 w-80 rounded-2xl border border-[#1e293b] bg-[#0f1117] shadow-soft p-4 z-10">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="text-xs font-mono px-1.5 py-0.5 rounded bg-accent">{picked.tag.toLowerCase()}</div>
-                  <button onClick={() => setPicked(null)} className="p-1 rounded hover:bg-accent text-muted-foreground"><X className="h-3.5 w-3.5" /></button>
+                  <div className="text-xs font-mono px-1.5 py-0.5 rounded bg-[#1e293b] text-[#94a3b8]">{picked.tag.toLowerCase()}</div>
+                  <button onClick={() => setPicked(null)} className="p-1 rounded hover:bg-[#1e293b] text-[#475569]"><X className="h-3.5 w-3.5" /></button>
                 </div>
-                <label className="text-xs text-muted-foreground">Text</label>
-                <textarea
-                  value={draftText}
-                  onChange={(e) => setDraftText(e.target.value)}
-                  rows={3}
-                  className="mt-1 w-full rounded-lg border bg-background px-2.5 py-2 text-sm outline-none focus:border-brand/50"
-                />
-                <button onClick={saveTextEdit} className="mt-2 w-full py-2 rounded-lg bg-gradient-brand text-white text-sm font-medium hover:opacity-90">
-                  Save text
-                </button>
-                <div className="my-3 h-px bg-border" />
-                <label className="text-xs text-muted-foreground flex items-center gap-1"><Wand2 className="h-3 w-3" /> Or ask Nirpesh</label>
-                <textarea
-                  value={aiInstr}
-                  onChange={(e) => setAiInstr(e.target.value)}
-                  rows={2}
-                  placeholder="make this bigger and purple"
-                  className="mt-1 w-full rounded-lg border bg-background px-2.5 py-2 text-sm outline-none focus:border-brand/50"
-                />
-                <button onClick={askAiOnElement} disabled={!aiInstr.trim()}
-                  className="mt-2 w-full py-2 rounded-lg border bg-card hover:bg-accent text-sm font-medium disabled:opacity-50">
-                  Ask Nirpesh
-                </button>
+                <label className="text-xs text-[#475569]">Text</label>
+                <textarea value={draftText} onChange={(e) => setDraftText(e.target.value)} rows={3}
+                  className="mt-1 w-full rounded-lg border border-[#1e293b] bg-[#080b10] px-2.5 py-2 text-sm outline-none focus:border-brand/50 text-[#e2e8f0]" />
+                <button onClick={saveTextEdit} className="mt-2 w-full py-2 rounded-lg bg-gradient-brand text-white text-sm font-medium hover:opacity-90">Save text</button>
+                <div className="my-3 h-px bg-[#1e293b]" />
+                <label className="text-xs text-[#475569] flex items-center gap-1"><Wand2 className="h-3 w-3" /> Or ask Nirpesh</label>
+                <textarea value={aiInstr} onChange={(e) => setAiInstr(e.target.value)} rows={2} placeholder="make this bigger and purple"
+                  className="mt-1 w-full rounded-lg border border-[#1e293b] bg-[#080b10] px-2.5 py-2 text-sm outline-none focus:border-brand/50 text-[#e2e8f0]" />
+                <button onClick={askAiOnElement} disabled={!aiInstr.trim()} className="mt-2 w-full py-2 rounded-lg border border-[#1e293b] bg-[#0f1117] hover:bg-[#1e293b] text-sm font-medium disabled:opacity-50 text-[#94a3b8]">Ask Nirpesh</button>
               </div>
             )}
 
-            {/* Loading overlay on preview — subtle pulse */}
             {loading && (
-              <div className="absolute inset-0 bg-background/40 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
+              <div className="absolute inset-0 bg-[#080b10]/60 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
                 <div className="flex flex-col items-center gap-3">
                   <div className="relative grid place-items-center h-12 w-12 rounded-xl bg-gradient-brand shadow-glow">
                     <span className="absolute inset-0 rounded-xl bg-gradient-brand opacity-50 animate-ping" />
                     <span className="relative text-xl font-bold text-white z-10">N</span>
                   </div>
-                  <p className="text-xs text-muted-foreground font-medium">Building preview…</p>
+                  <p className="text-xs text-[#64748b] font-medium">{planMode ? "Planning…" : "Building preview…"}</p>
                 </div>
               </div>
             )}
@@ -578,12 +599,8 @@ function AppPage() {
         </section>
       </div>
 
-      {/* bounce keyframes */}
       <style>{`
-        @keyframes bounce {
-          0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-          40% { transform: translateY(-5px); opacity: 1; }
-        }
+        @keyframes bounce { 0%,80%,100%{transform:translateY(0);opacity:0.4} 40%{transform:translateY(-5px);opacity:1} }
       `}</style>
     </div>
   );
