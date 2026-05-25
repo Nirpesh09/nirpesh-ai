@@ -44,3 +44,5 @@ build = ["bun", "run", "build"]
 [userenv.shared]
 MISTRAL_API_KEY = "KCJaOK9X7ULWXud81dqbQxDqjc8IAqAh"
 GITHUB_TOKEN = "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"
+VITE_GOOGLE_CLIENT_ID = "1052146479355-pd9hs0qob6n1re4oc7fjv10g9ueaf0ls.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET = "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"
