@@ -154,8 +154,10 @@ function AppPage() {
         setAiInstr("");
       }
       if (d.type === "nirpesh:html" && typeof d.html === "string") {
-        // strip injected script before saving canonical html
-        const clean = d.html.replace(EDIT_SCRIPT, "").replace(/\sdata-nirpesh-(id|hover|pick)="[^"]*"/g, "");
+        const clean = d.html
+          .replace(/<script>\(function\(\)\{[\s\S]*?__nirpeshInit[\s\S]*?<\/script>/g, "")
+          .replace(/<style>\[data-nirpesh[\s\S]*?<\/style>/g, "")
+          .replace(/\sdata-nirpesh-(id|hover|pick)(="[^"]*")?/g, "");
         setHtml(clean);
         const now = Date.now();
         const saved: SavedApp = {
