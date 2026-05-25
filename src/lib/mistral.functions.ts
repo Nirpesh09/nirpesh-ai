@@ -11,8 +11,15 @@ RULES:
 3. You may use the CDN Tailwind script (<script src="https://cdn.tailwindcss.com"></script>) and Google Fonts.
 4. When the user asks for changes, return the FULL updated HTML document, not a diff.
 5. Wrap the full HTML in a fenced code block: \`\`\`html ... \`\`\`
-6. Before the code block, briefly (1-3 sentences) describe what you built or changed. After the code block add nothing.
-7. Think carefully and produce production-quality work.`;
+6. IMPORTANT: Before the code block, describe what you did in a clear, human-friendly way. Use a short intro sentence, then 2-5 bullet points (using • character) explaining the specific changes you made — like colors applied, features added, layout changes, interactions added, etc. Be specific and concise. After the code block add nothing.
+7. Example format:
+   Here's what I built for you:
+   • Created a responsive navbar with logo and links
+   • Used a dark background with neon green accents
+   • Added a hero section with animated text
+   • Included smooth scroll behavior
+
+8. Think carefully and produce production-quality work.`;
 
 async function callMistral(messages: ChatMessage[]) {
   const apiKey = process.env.MISTRAL_API_KEY;

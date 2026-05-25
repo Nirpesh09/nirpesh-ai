@@ -88,6 +88,37 @@ function stripCode(text: string): string {
   return text.replace(/```[\s\S]*?```/g, "").trim() || "Done — preview is ready.";
 }
 
+function AiMessage({ content }: { content: string }) {
+  const clean = stripCode(content);
+  const lines = clean.split("\n").map((l) => l.trim()).filter(Boolean);
+  const bullets = lines.filter((l) => l.startsWith("•") || l.startsWith("-") || l.startsWith("*"));
+  const intro = lines.find((l) => !l.startsWith("•") && !l.startsWith("-") && !l.startsWith("*"));
+
+  if (bullets.length === 0) {
+    return (
+      <p className="text-sm leading-relaxed">{clean}</p>
+    );
+  }
+
+  return (
+    <div className="text-sm leading-relaxed space-y-2">
+      {intro && <p className="text-muted-foreground">{intro}</p>}
+      <ul className="space-y-1.5">
+        {bullets.map((b, i) => (
+          <li key={i} className="flex items-start gap-2">
+            <span className="mt-0.5 h-4 w-4 rounded-full bg-gradient-brand shrink-0 grid place-items-center">
+              <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 10 10">
+                <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
+            <span>{b.replace(/^[•\-*]\s*/, "")}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 type Picked = { id: string; tag: string; text: string; outer: string };
 
 function AppPage() {
@@ -344,7 +375,9 @@ function AppPage() {
                   {m.role === "user" ? <><span>{profile.emoji}</span> {profile.name}</> : "✨ Nirpesh"}
                 </div>
                 <div className="text-sm leading-relaxed [&_p]:my-1">
-                  <ReactMarkdown>{m.role === "assistant" ? stripCode(m.content) : m.content}</ReactMarkdown>
+                  {m.role === "assistant"
+                    ? <AiMessage content={m.content} />
+                    : <p>{m.content}</p>}
                 </div>
               </div>
             ))}
