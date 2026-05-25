@@ -95,15 +95,18 @@ function Home() {
             placeholder="A cozy todo app with a forest theme…"
             className="w-full resize-none bg-transparent px-5 pt-5 pb-2 outline-none text-base placeholder:text-muted-foreground"
           />
-          <div className="flex items-center justify-between px-3 pb-3">
-            <span className="text-xs text-muted-foreground px-2">⏎ to send</span>
-            <button
-              onClick={() => start()}
-              disabled={!prompt.trim()}
-              className="grid place-items-center h-9 w-9 rounded-xl bg-gradient-brand text-white disabled:opacity-30 hover:scale-105 transition-transform shadow-glow"
-            >
-              <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
-            </button>
+          <div className="flex items-center justify-between px-3 pb-3 gap-2">
+            <ModelPicker value={model} onChange={pickModel} />
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground hidden sm:block">⏎ to send</span>
+              <button
+                onClick={() => start()}
+                disabled={!prompt.trim()}
+                className="grid place-items-center h-9 w-9 rounded-xl bg-gradient-brand text-white disabled:opacity-30 hover:scale-105 transition-transform shadow-glow"
+              >
+                <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
         </div>
 
