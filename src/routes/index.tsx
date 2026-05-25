@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { Sparkles, ArrowUp, Trash2, Plus } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { UserMenu } from "@/components/UserMenu";
+import { ModelPicker } from "@/components/ModelPicker";
 import { loadApps, deleteApp, newId, type SavedApp } from "@/lib/apps";
+import { loadModel, saveModel, type ModelId } from "@/lib/models";
 
 
 export const Route = createFileRoute("/")({
@@ -29,15 +31,19 @@ function Home() {
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
   const [apps, setApps] = useState<SavedApp[]>([]);
+  const [model, setModel] = useState<ModelId>("nirpesh");
 
-  useEffect(() => { setApps(loadApps()); }, []);
+  useEffect(() => { setApps(loadApps()); setModel(loadModel()); }, []);
 
   const start = (seed?: string) => {
     const text = (seed ?? prompt).trim();
     if (!text) return;
+    saveModel(model);
     const id = newId();
     navigate({ to: "/app/$id", params: { id }, search: { prompt: text } as never });
   };
+
+  const pickModel = (m: ModelId) => { setModel(m); saveModel(m); };
 
   const remove = (id: string) => {
     deleteApp(id);
