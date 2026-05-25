@@ -43,3 +43,4 @@ build = ["bun", "run", "build"]
 
 [userenv.shared]
 MISTRAL_API_KEY = "KCJaOK9X7ULWXud81dqbQxDqjc8IAqAh"
+GITHUB_TOKEN = "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"
