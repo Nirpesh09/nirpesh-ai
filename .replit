@@ -38,3 +38,8 @@ externalPort = 80
 deploymentTarget = "autoscale"
 run = ["bun", "run", "preview"]
 build = ["bun", "run", "build"]
+
+[userenv]
+
+[userenv.shared]
+MISTRAL_API_KEY = "KCJaOK9X7ULWXud81dqbQxDqjc8IAqAh"
