@@ -1,12 +1,14 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Sparkles, ArrowUp, Trash2, Plus, Terminal } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { ArrowUp, Trash2, Plus, Terminal } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { UserMenu } from "@/components/UserMenu";
 import { ModelPicker } from "@/components/ModelPicker";
 import { MatrixRain } from "@/components/MatrixRain";
+import { AuthModal } from "@/components/AuthModal";
 import { loadApps, deleteApp, newId, type SavedApp } from "@/lib/apps";
 import { loadModel, saveModel, type ModelId } from "@/lib/models";
+import { onAuthChange, type AuthUser } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,15 +34,41 @@ function Home() {
   const [prompt, setPrompt] = useState("");
   const [apps, setApps] = useState<SavedApp[]>([]);
   const [model, setModel] = useState<ModelId>("nirpesh");
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
 
-  useEffect(() => { setApps(loadApps()); setModel(loadModel()); }, []);
+  useEffect(() => {
+    setApps(loadApps());
+    setModel(loadModel());
+    const { data: { subscription } } = onAuthChange((user) => setAuthUser(user));
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const doNavigate = useCallback((text: string) => {
+    saveModel(model);
+    const id = newId();
+    navigate({ to: "/app/$id", params: { id }, search: { prompt: text } as never });
+  }, [model, navigate]);
 
   const start = (seed?: string) => {
     const text = (seed ?? prompt).trim();
     if (!text) return;
-    saveModel(model);
-    const id = newId();
-    navigate({ to: "/app/$id", params: { id }, search: { prompt: text } as never });
+    if (!authUser) {
+      // Gate: require sign-in before building
+      setPendingPrompt(text);
+      setShowAuth(true);
+      return;
+    }
+    doNavigate(text);
+  };
+
+  const handleAuthSuccess = () => {
+    setShowAuth(false);
+    if (pendingPrompt) {
+      doNavigate(pendingPrompt);
+      setPendingPrompt(null);
+    }
   };
 
   const pickModel = (m: ModelId) => { setModel(m); saveModel(m); };
@@ -57,15 +85,14 @@ function Home() {
         <MatrixRain />
       </div>
 
-      {/* Dark overlay so content is readable */}
+      {/* Dark overlay */}
       <div className="absolute inset-0 z-[1]" style={{ background: "rgba(0,0,0,0.55)" }} />
 
       {/* Subtle green gradient glow at top */}
       <div
         className="absolute inset-x-0 top-0 h-[500px] z-[2] pointer-events-none"
         style={{
-          background:
-            "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(0,200,80,0.10) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(0,200,80,0.10) 0%, transparent 70%)",
         }}
       />
 
@@ -97,14 +124,12 @@ function Home() {
 
         <h1 className="mt-6 text-5xl md:text-7xl font-semibold tracking-tight leading-[1.02] text-white">
           Build any app <br />
-          <span
-            style={{
-              background: "linear-gradient(135deg, #22c55e, #4ade80, #86efac)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
+          <span style={{
+            background: "linear-gradient(135deg, #22c55e, #4ade80, #86efac)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}>
             from one prompt.
           </span>
         </h1>
@@ -112,9 +137,30 @@ function Home() {
           Describe what you want. Nirpesh plans it, writes it, and saves it here forever.
         </p>
 
+        {/* Auth banner — show if not signed in */}
+        {!authUser && (
+          <div
+            className="mt-6 inline-flex items-center gap-3 rounded-2xl px-4 py-3 border text-sm"
+            style={{
+              background: "rgba(124,58,237,0.12)",
+              borderColor: "rgba(124,58,237,0.35)",
+              color: "rgba(196,181,253,0.9)",
+            }}
+          >
+            <span>Sign in to start building — it's free</span>
+            <button
+              onClick={() => setShowAuth(true)}
+              className="px-3 py-1 rounded-lg text-xs font-semibold text-white"
+              style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}
+            >
+              Sign In
+            </button>
+          </div>
+        )}
+
         {/* prompt box */}
         <div
-          className="mt-10 rounded-2xl text-left border"
+          className="mt-8 rounded-2xl text-left border"
           style={{
             background: "rgba(0,10,0,0.75)",
             borderColor: "rgba(0,255,80,0.25)",
@@ -138,7 +184,7 @@ function Home() {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); start(); }
             }}
             rows={3}
-            placeholder="A cozy todo app with a forest theme…"
+            placeholder={authUser ? "A cozy todo app with a forest theme…" : "Describe your app — sign in to build it…"}
             className="w-full resize-none bg-transparent px-5 pt-4 pb-2 outline-none text-base font-mono"
             style={{ color: "#86efac", caretColor: "#4ade80" }}
           />
@@ -175,12 +221,10 @@ function Home() {
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,255,80,0.12)";
                 (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,255,80,0.5)";
-                (e.currentTarget as HTMLButtonElement).style.color = "#86efac";
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,255,80,0.05)";
                 (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,255,80,0.20)";
-                (e.currentTarget as HTMLButtonElement).style.color = "rgba(134,239,172,0.85)";
               }}
             >
               {q}
@@ -190,10 +234,7 @@ function Home() {
       </main>
 
       {/* saved apps */}
-      <section
-        id="apps"
-        className="relative z-10 mx-auto max-w-6xl px-6 pb-24"
-      >
+      <section id="apps" className="relative z-10 mx-auto max-w-6xl px-6 pb-24">
         <div
           className="rounded-3xl border p-8"
           style={{
@@ -213,7 +254,10 @@ function Home() {
 
           {apps.length === 0 ? (
             <button
-              onClick={() => document.querySelector("textarea")?.focus()}
+              onClick={() => {
+                if (!authUser) { setShowAuth(true); return; }
+                document.querySelector("textarea")?.focus();
+              }}
               className="w-full grid place-items-center aspect-[5/2] rounded-2xl border-2 border-dashed transition-colors"
               style={{ borderColor: "rgba(0,255,80,0.20)", color: "rgba(74,222,128,0.6)" }}
               onMouseEnter={(e) => {
@@ -227,7 +271,7 @@ function Home() {
             >
               <div className="flex flex-col items-center gap-2">
                 <Plus className="h-6 w-6" />
-                <span className="text-sm font-mono">Start your first app</span>
+                <span className="text-sm font-mono">{authUser ? "Start your first app" : "Sign in to build your first app"}</span>
               </div>
             </button>
           ) : (
@@ -277,6 +321,14 @@ function Home() {
           )}
         </div>
       </section>
+
+      {/* Auth modal */}
+      {showAuth && (
+        <AuthModal
+          onClose={() => { setShowAuth(false); setPendingPrompt(null); }}
+          onSuccess={handleAuthSuccess}
+        />
+      )}
     </div>
   );
 }
