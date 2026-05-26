@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
-import { ArrowUp, Trash2, Plus, Terminal } from "lucide-react";
+import { ArrowUp, Trash2, Layers, Smartphone, LayoutTemplate, MoreHorizontal, RefreshCw, Globe, ClipboardList } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { UserMenu } from "@/components/UserMenu";
 import { ModelPicker } from "@/components/ModelPicker";
@@ -13,35 +13,38 @@ import { onAuthChange, type AuthUser } from "@/lib/auth";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Nirpesh — AI that builds apps from a prompt" },
-      { name: "description", content: "Describe an app. Nirpesh thinks, builds, and saves it for you." },
+      { title: "Nirpesh — Where ideas become reality" },
+      { name: "description", content: "Build fully functional apps and websites through simple conversations." },
     ],
   }),
   component: Home,
 });
 
-const IDEAS = [
-  "A pomodoro timer with ambient sounds",
-  "A landing page for a coffee subscription",
-  "A neon arcade snake game",
-  "A personal finance dashboard",
-  "A glassmorphism weather widget",
-  "A recipe card generator",
+type AppKind = "fullstack" | "mobile" | "landing";
+
+const TABS: { id: AppKind; label: string; icon: typeof Layers; placeholder: string }[] = [
+  { id: "fullstack", label: "Full Stack App", icon: Layers, placeholder: "Build me a CRM system with…" },
+  { id: "mobile", label: "Mobile App", icon: Smartphone, placeholder: "Build me a fitness tracker app with…" },
+  { id: "landing", label: "Landing Page", icon: LayoutTemplate, placeholder: "Design a launch page for…" },
 ];
+
+const QUICK = ["Wingman", "My Counter Part", "Bill Generator", "Word of the Day"];
 
 function Home() {
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
+  const [tab, setTab] = useState<AppKind>("fullstack");
   const [apps, setApps] = useState<SavedApp[]>([]);
   const [model, setModel] = useState<ModelId>("nirpesh");
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [showAuth, setShowAuth] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+  const [view, setView] = useState<"recent" | "deployed">("recent");
 
   useEffect(() => {
     setApps(loadApps());
     setModel(loadModel());
-    const { data: { subscription } } = onAuthChange((user) => setAuthUser(user));
+    const { data: { subscription } } = onAuthChange((u) => setAuthUser(u));
     return () => subscription.unsubscribe();
   }, []);
 
@@ -54,281 +57,195 @@ function Home() {
   const start = (seed?: string) => {
     const text = (seed ?? prompt).trim();
     if (!text) return;
-    if (!authUser) {
-      // Gate: require sign-in before building
-      setPendingPrompt(text);
-      setShowAuth(true);
-      return;
-    }
+    if (!authUser) { setPendingPrompt(text); setShowAuth(true); return; }
     doNavigate(text);
   };
 
   const handleAuthSuccess = () => {
     setShowAuth(false);
-    if (pendingPrompt) {
-      doNavigate(pendingPrompt);
-      setPendingPrompt(null);
-    }
+    if (pendingPrompt) { doNavigate(pendingPrompt); setPendingPrompt(null); }
   };
 
-  const pickModel = (m: ModelId) => { setModel(m); saveModel(m); };
+  const remove = (id: string) => { deleteApp(id); setApps(loadApps()); };
 
-  const remove = (id: string) => {
-    deleteApp(id);
-    setApps(loadApps());
-  };
+  const current = TABS.find((t) => t.id === tab)!;
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ background: "#000" }}>
-      {/* Matrix rain full background */}
-      <div className="absolute inset-0 z-0">
-        <MatrixRain />
-      </div>
+    <div className="min-h-screen relative overflow-hidden text-white" style={{ background: "#06070b" }}>
+      <div className="absolute inset-0 z-0 opacity-30"><MatrixRain /></div>
+      <div className="absolute inset-0 z-[1]" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(34,211,238,0.10), transparent 60%), #06070b" }} />
 
-      {/* Dark overlay */}
-      <div className="absolute inset-0 z-[1]" style={{ background: "rgba(0,0,0,0.55)" }} />
-
-      {/* Subtle green gradient glow at top */}
-      <div
-        className="absolute inset-x-0 top-0 h-[500px] z-[2] pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(0,200,80,0.10) 0%, transparent 70%)",
-        }}
-      />
-
-      {/* nav */}
-      <header className="relative z-10 mx-auto max-w-6xl px-6 h-16 flex items-center justify-between">
+      {/* Top nav */}
+      <header className="relative z-10 mx-auto max-w-6xl px-5 h-14 flex items-center justify-between">
         <Logo />
-        <div className="flex items-center gap-6">
-          <nav className="hidden sm:flex items-center gap-6 text-sm" style={{ color: "#4ade80" }}>
-            <a href="#apps" className="hover:text-white transition-colors">Your apps</a>
-            <a href="#ideas" className="hover:text-white transition-colors">Ideas</a>
-          </nav>
+        <div className="flex items-center gap-3">
+          <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+            style={{ background: "linear-gradient(135deg, #fde68a, #fbbf24)", color: "#1f1300" }}>
+            Buy Credits
+          </button>
           <UserMenu />
         </div>
       </header>
 
-      {/* hero */}
-      <main className="relative z-10 mx-auto max-w-3xl px-6 pt-16 pb-24 text-center">
-        <div
-          className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs border"
-          style={{
-            background: "rgba(0,255,80,0.07)",
-            borderColor: "rgba(0,255,80,0.25)",
-            color: "#4ade80",
-          }}
-        >
-          <Terminal className="h-3.5 w-3.5" />
-          <span className="font-mono">Nirpesh_AI :: thinking like a developer</span>
+      {/* Hero */}
+      <main className="relative z-10 mx-auto max-w-3xl px-5 pt-10 pb-10 text-center">
+        <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs border"
+          style={{ background: "rgba(20,25,35,0.7)", borderColor: "rgba(255,255,255,0.08)" }}>
+          <span className="h-2 w-2 rounded-full" style={{ background: "#22d3ee", boxShadow: "0 0 8px #22d3ee" }} />
+          <span style={{ color: "rgba(255,255,255,0.85)" }}>
+            {authUser?.email ? `${authUser.email.split("@")[0]}'s Project` : "Nirpesh's Project"}
+          </span>
         </div>
 
-        <h1 className="mt-6 text-5xl md:text-7xl font-semibold tracking-tight leading-[1.02] text-white">
-          Build any app <br />
-          <span style={{
-            background: "linear-gradient(135deg, #22c55e, #4ade80, #86efac)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}>
-            from one prompt.
-          </span>
+        <h1 className="mt-5 text-4xl md:text-5xl font-semibold tracking-tight" style={{
+          background: "linear-gradient(135deg, #67e8f9, #22d3ee, #5eead4)",
+          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+        }}>
+          Where ideas become reality
         </h1>
-        <p className="mt-5 text-lg max-w-xl mx-auto" style={{ color: "rgba(134,239,172,0.75)" }}>
-          Describe what you want. Nirpesh plans it, writes it, and saves it here forever.
+        <p className="mt-3 text-sm md:text-base" style={{ color: "rgba(255,255,255,0.55)" }}>
+          Build fully functional apps and websites through simple conversations
         </p>
 
-        {/* Auth banner — show if not signed in */}
-        {!authUser && (
-          <div
-            className="mt-6 inline-flex items-center gap-3 rounded-2xl px-4 py-3 border text-sm"
-            style={{
-              background: "rgba(124,58,237,0.12)",
-              borderColor: "rgba(124,58,237,0.35)",
-              color: "rgba(196,181,253,0.9)",
-            }}
-          >
-            <span>Sign in to start building — it's free</span>
-            <button
-              onClick={() => setShowAuth(true)}
-              className="px-3 py-1 rounded-lg text-xs font-semibold text-white"
-              style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}
-            >
-              Sign In
-            </button>
-          </div>
-        )}
+        {/* Tabs */}
+        <div className="mt-7 flex items-center gap-1 justify-start overflow-x-auto no-scrollbar">
+          {TABS.map((t) => {
+            const Icon = t.icon;
+            const active = tab === t.id;
+            return (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors"
+                style={{
+                  background: active ? "rgba(20,25,35,0.85)" : "transparent",
+                  color: active ? "#22d3ee" : "rgba(255,255,255,0.55)",
+                  borderBottom: active ? "2px solid #22d3ee" : "2px solid transparent",
+                }}>
+                <Icon className="h-4 w-4" /> {t.label}
+              </button>
+            );
+          })}
+        </div>
 
-        {/* prompt box */}
-        <div
-          className="mt-8 rounded-2xl text-left border"
+        {/* Prompt box */}
+        <div className="rounded-2xl border text-left p-3"
           style={{
-            background: "rgba(0,10,0,0.75)",
-            borderColor: "rgba(0,255,80,0.25)",
-            boxShadow: "0 0 40px rgba(0,255,80,0.08), 0 0 80px rgba(0,255,80,0.04)",
-            backdropFilter: "blur(12px)",
-          }}
-        >
-          <div
-            className="flex items-center gap-2 px-4 pt-3 pb-1 border-b text-xs font-mono"
-            style={{ borderColor: "rgba(0,255,80,0.15)", color: "#4ade80" }}
-          >
-            <span className="h-2.5 w-2.5 rounded-full bg-red-500 opacity-70" />
-            <span className="h-2.5 w-2.5 rounded-full bg-yellow-500 opacity-70" />
-            <span className="h-2.5 w-2.5 rounded-full bg-green-500 opacity-70" />
-            <span className="ml-2 opacity-50">nirpesh@ai ~ prompt</span>
-          </div>
+            background: "rgba(15,20,28,0.85)",
+            borderColor: "rgba(255,255,255,0.08)",
+            boxShadow: "0 10px 40px -10px rgba(0,0,0,0.6)",
+            backdropFilter: "blur(10px)",
+          }}>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); start(); }
-            }}
-            rows={3}
-            placeholder={authUser ? "A cozy todo app with a forest theme…" : "Describe your app — sign in to build it…"}
-            className="w-full resize-none bg-transparent px-5 pt-4 pb-2 outline-none text-base font-mono"
-            style={{ color: "#86efac", caretColor: "#4ade80" }}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); start(); } }}
+            rows={2}
+            placeholder={current.placeholder}
+            className="w-full resize-none bg-transparent px-2 pt-2 pb-3 outline-none text-base"
+            style={{ color: "white" }}
           />
-          <div className="flex items-center justify-between px-3 pb-3 gap-2">
-            <ModelPicker value={model} onChange={pickModel} />
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <div className="flex items-center gap-1">
+              <ModelPicker value={model} onChange={(m) => { setModel(m); saveModel(m); }} />
+            </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs hidden sm:block font-mono" style={{ color: "#4ade80", opacity: 0.6 }}>
-                ⏎ to send
+              <span className="hidden sm:inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full" style={{ color: "rgba(255,255,255,0.6)", background: "rgba(255,255,255,0.05)" }}>
+                <Globe className="h-3 w-3" /> Public
               </span>
-              <button
-                onClick={() => start()}
-                disabled={!prompt.trim()}
-                className="grid place-items-center h-9 w-9 rounded-xl text-black disabled:opacity-30 hover:scale-105 transition-transform"
-                style={{ background: "linear-gradient(135deg, #22c55e, #4ade80)" }}
-              >
+              <button onClick={() => start()} disabled={!prompt.trim()}
+                className="grid place-items-center h-8 w-8 rounded-lg text-black disabled:opacity-30 hover:scale-105 transition-transform"
+                style={{ background: "linear-gradient(135deg, #67e8f9, #22d3ee)" }}>
                 <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
               </button>
             </div>
           </div>
         </div>
 
-        {/* ideas */}
-        <div id="ideas" className="mt-6 flex flex-wrap gap-2 justify-center">
-          {IDEAS.map((q) => (
-            <button
-              key={q}
-              onClick={() => start(q)}
-              className="px-3.5 py-1.5 rounded-full border text-sm font-mono transition-all hover:scale-105"
-              style={{
-                background: "rgba(0,255,80,0.05)",
-                borderColor: "rgba(0,255,80,0.20)",
-                color: "rgba(134,239,172,0.85)",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,255,80,0.12)";
-                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,255,80,0.5)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,255,80,0.05)";
-                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,255,80,0.20)";
-              }}
-            >
+        {/* Quick chips */}
+        <div className="mt-4 flex flex-wrap gap-2 justify-center">
+          {QUICK.map((q) => (
+            <button key={q} onClick={() => start(`Build me ${q}`)}
+              className="px-3 py-1.5 rounded-full text-xs font-medium border transition-colors"
+              style={{ background: "rgba(20,25,35,0.7)", borderColor: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.75)" }}>
               {q}
             </button>
           ))}
         </div>
       </main>
 
-      {/* saved apps */}
-      <section id="apps" className="relative z-10 mx-auto max-w-6xl px-6 pb-24">
-        <div
-          className="rounded-3xl border p-8"
-          style={{
-            background: "rgba(0,5,0,0.80)",
-            borderColor: "rgba(0,255,80,0.15)",
-            backdropFilter: "blur(16px)",
-          }}
-        >
-          <div className="flex items-end justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-semibold tracking-tight text-white">Your apps</h2>
-              <p className="text-sm mt-1 font-mono" style={{ color: "#4ade80", opacity: 0.7 }}>
-                {apps.length === 0 ? "Apps you build show up here." : `${apps.length} saved`}
-              </p>
-            </div>
+      {/* Recent / Deployed */}
+      <section className="relative z-10 mx-auto max-w-6xl px-5 pb-20">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-4 text-sm">
+            <button onClick={() => setView("recent")}
+              className="flex items-center gap-2 font-medium"
+              style={{ color: view === "recent" ? "white" : "rgba(255,255,255,0.4)" }}>
+              <ClipboardList className="h-4 w-4" /> Recent Tasks
+            </button>
+            <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+            <button onClick={() => setView("deployed")}
+              className="flex items-center gap-2 font-medium"
+              style={{ color: view === "deployed" ? "white" : "rgba(255,255,255,0.4)" }}>
+              <Globe className="h-4 w-4" /> Deployed Apps
+            </button>
+          </div>
+          <button onClick={() => setApps(loadApps())} className="p-1.5 rounded-md hover:bg-white/5" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <RefreshCw className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="rounded-xl border overflow-hidden" style={{ background: "rgba(15,20,28,0.6)", borderColor: "rgba(255,255,255,0.06)" }}>
+          <div className="grid grid-cols-12 px-4 py-2.5 text-[11px] uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.4)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+            <div className="col-span-2">ID</div>
+            <div className="col-span-7">Task</div>
+            <div className="col-span-3 text-right">Last Modified</div>
           </div>
 
           {apps.length === 0 ? (
-            <button
-              onClick={() => {
-                if (!authUser) { setShowAuth(true); return; }
-                document.querySelector("textarea")?.focus();
-              }}
-              className="w-full grid place-items-center aspect-[5/2] rounded-2xl border-2 border-dashed transition-colors"
-              style={{ borderColor: "rgba(0,255,80,0.20)", color: "rgba(74,222,128,0.6)" }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,255,80,0.50)";
-                (e.currentTarget as HTMLButtonElement).style.color = "#4ade80";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,255,80,0.20)";
-                (e.currentTarget as HTMLButtonElement).style.color = "rgba(74,222,128,0.6)";
-              }}
-            >
-              <div className="flex flex-col items-center gap-2">
-                <Plus className="h-6 w-6" />
-                <span className="text-sm font-mono">{authUser ? "Start your first app" : "Sign in to build your first app"}</span>
-              </div>
-            </button>
+            <div className="px-4 py-12 text-center text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
+              No tasks yet. Describe an app above to get started.
+            </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {apps.map((a) => (
-                <div
-                  key={a.id}
-                  className="group relative rounded-2xl border overflow-hidden transition-all hover:scale-[1.02]"
-                  style={{ background: "rgba(0,15,0,0.8)", borderColor: "rgba(0,255,80,0.15)" }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(0,255,80,0.40)";
-                    (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 20px rgba(0,255,80,0.10)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(0,255,80,0.15)";
-                    (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
-                  }}
-                >
-                  <Link to="/app/$id" params={{ id: a.id }} className="block">
-                    <div className="aspect-[4/3] bg-white overflow-hidden">
-                      <iframe
-                        title={a.title}
-                        srcDoc={a.html}
-                        sandbox=""
-                        className="w-full h-full pointer-events-none"
-                        style={{ transform: "scale(0.5)", transformOrigin: "top left", width: "200%", height: "200%" }}
-                      />
-                    </div>
-                    <div className="p-3">
-                      <div className="text-sm font-medium truncate text-white">{a.title}</div>
-                      <div className="text-xs mt-0.5 font-mono" style={{ color: "#4ade80", opacity: 0.6 }}>
-                        {new Date(a.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                      </div>
-                    </div>
-                  </Link>
-                  <button
-                    onClick={() => remove(a.id)}
-                    className="absolute top-2 right-2 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ background: "rgba(0,0,0,0.7)", color: "#f87171" }}
-                    aria-label="Delete"
-                  >
+            apps.map((a) => (
+              <div key={a.id} className="grid grid-cols-12 px-4 py-3 items-center text-sm group hover:bg-white/[0.02]"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                <div className="col-span-2 font-mono text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+                  NRP — {a.id.slice(0, 5)}
+                </div>
+                <Link to="/app/$id" params={{ id: a.id }} className="col-span-7 min-w-0">
+                  <div className="font-medium truncate text-white">{a.title}</div>
+                  <div className="text-xs truncate mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>{a.prompt}</div>
+                </Link>
+                <div className="col-span-3 flex items-center justify-end gap-2 text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+                  {timeAgo(a.updatedAt)}
+                  <button onClick={() => remove(a.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/5" style={{ color: "#f87171" }}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
+                  <button className="p-1 rounded hover:bg-white/5" style={{ color: "rgba(255,255,255,0.5)" }}>
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))
           )}
+
+          <div className="flex items-center justify-between px-4 py-2.5 text-xs" style={{ color: "rgba(255,255,255,0.4)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+            <div>Showing {apps.length === 0 ? 0 : 1}-{apps.length} out of {apps.length}</div>
+            <div>Tasks per page: 50</div>
+          </div>
         </div>
       </section>
 
-      {/* Auth modal */}
       {showAuth && (
-        <AuthModal
-          onClose={() => { setShowAuth(false); setPendingPrompt(null); }}
-          onSuccess={handleAuthSuccess}
-        />
+        <AuthModal onClose={() => { setShowAuth(false); setPendingPrompt(null); }} onSuccess={handleAuthSuccess} />
       )}
     </div>
   );
+}
+
+function timeAgo(ts: number) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60); if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24); return `${d} day${d > 1 ? "s" : ""} ago`;
 }
