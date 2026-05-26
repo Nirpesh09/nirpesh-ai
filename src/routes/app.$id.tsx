@@ -385,7 +385,7 @@ function AppPage() {
         <div className="bg-destructive/10 text-destructive text-xs px-4 py-2 border-b border-[#1e293b]">{gh.error}</div>
       )}
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[400px_1fr] min-h-0">
+      <div className="flex-1 grid grid-cols-[minmax(180px,40%)_1fr] lg:grid-cols-[400px_1fr] min-h-0">
         {/* ── CHAT PANEL (dark) ── */}
         <aside className="border-r border-[#1e293b] flex flex-col min-h-0 bg-[#080b10]">
           {/* Messages */}
