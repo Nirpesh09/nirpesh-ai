@@ -7,9 +7,10 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-
+import { useState } from "react";
 import appCss from "../styles.css?url";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 function NotFoundComponent() {
   return (
@@ -48,10 +49,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
+            onClick={() => { router.invalidate(); reset(); }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Try again
@@ -74,13 +72,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Nirpesh AI" },
-      { name: "description", content: "Nirpesh AI is a cutting-edge, full-stack AI development assistant engineered to revolutionize how web applications are built. Inspired by powerful modern platfo" },
-      { name: "author", content: "Lovable" },
+      { name: "description", content: "Build any app from one prompt. Nirpesh plans it, writes it, and saves it forever." },
+      { name: "author", content: "Nirpesh" },
       { property: "og:title", content: "Nirpesh AI" },
-      { property: "og:description", content: "Nirpesh AI is a cutting-edge, full-stack AI development assistant engineered to revolutionize how web applications are built. Inspired by powerful modern platfo" },
+      { property: "og:description", content: "Build any app from one prompt." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Nirpesh AI" },
       { name: "twitter:description", content: "Nirpesh AI is a cutting-edge, full-stack AI development assistant engineered to revolutionize how web applications are built. Inspired by powerful modern platfo" },
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/ad294b90-4a60-4f36-9b06-92be26efeb27" },
@@ -93,10 +90,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap",
       },
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
     ],
   }),
   shellComponent: RootShell,
@@ -121,11 +115,15 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [loading, setLoading] = useState(true);
 
   return (
     <QueryClientProvider client={queryClient}>
       <GlobalErrorBoundary>
-        <Outlet />
+        {loading && <LoadingScreen onDone={() => setLoading(false)} />}
+        <div style={{ visibility: loading ? "hidden" : "visible" }}>
+          <Outlet />
+        </div>
       </GlobalErrorBoundary>
     </QueryClientProvider>
   );
