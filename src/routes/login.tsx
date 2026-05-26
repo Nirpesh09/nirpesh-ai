@@ -173,20 +173,24 @@ function LoginPage() {
       >
         {/* Logo + Title */}
         <div className="text-center mb-8">
-          <div
-            className="inline-grid place-items-center h-20 w-20 rounded-3xl mb-5 mx-auto"
-            style={{
-              background: "linear-gradient(135deg, #7c3aed, #a855f7, #4ade80)",
-              boxShadow: "0 0 60px rgba(168,85,247,0.4), 0 0 30px rgba(34,197,94,0.2)",
-              animation: "float 3s ease-in-out infinite",
-            }}
-          >
-            <span
-              className="text-4xl font-black text-white"
-              style={{ textShadow: "0 2px 20px rgba(255,255,255,0.4)" }}
+          <div style={{ perspective: "600px", width: "80px", height: "80px", margin: "0 auto 20px" }}>
+            <div
+              className="inline-grid place-items-center h-20 w-20 rounded-3xl"
+              style={{
+                background: "linear-gradient(135deg, #7c3aed, #a855f7, #4ade80)",
+                boxShadow: "0 0 60px rgba(168,85,247,0.5), 0 0 30px rgba(34,197,94,0.25), inset 0 1px 0 rgba(255,255,255,0.2)",
+                animation: "spin3d 4s linear infinite",
+                transformStyle: "preserve-3d",
+                backfaceVisibility: "visible",
+              }}
             >
-              N
-            </span>
+              <span
+                className="text-4xl font-black text-white"
+                style={{ textShadow: "0 2px 20px rgba(255,255,255,0.5)", position: "relative", zIndex: 1 }}
+              >
+                N
+              </span>
+            </div>
           </div>
 
           <h1
@@ -391,9 +395,12 @@ function LoginPage() {
       </div>
 
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-8px); }
+        @keyframes spin3d {
+          0%   { transform: rotateY(0deg) rotateX(8deg); }
+          25%  { transform: rotateY(90deg) rotateX(-8deg); }
+          50%  { transform: rotateY(180deg) rotateX(8deg); }
+          75%  { transform: rotateY(270deg) rotateX(-8deg); }
+          100% { transform: rotateY(360deg) rotateX(8deg); }
         }
         @keyframes blobMove {
           0% { transform: translate(0, 0) scale(1); }

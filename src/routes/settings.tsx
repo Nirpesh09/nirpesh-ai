@@ -213,8 +213,8 @@ function SettingsPage() {
               </Row>
             </>
           ) : (
-            <Row label="Not signed in" description="Sign in to sync your apps and settings across devices">
-              <Link to="/dashboard" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-brand text-white text-xs font-medium">
+            <Row label="Not signed in" description="Sign in to save your projects and sync across devices">
+              <Link to="/login" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-brand text-white text-xs font-medium">
                 <LogIn className="h-3.5 w-3.5" /> Sign In
               </Link>
             </Row>

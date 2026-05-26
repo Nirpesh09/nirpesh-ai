@@ -8,13 +8,16 @@ import { Logo } from "@/components/Logo";
 import { UserMenu } from "@/components/UserMenu";
 import { ModelPicker } from "@/components/ModelPicker";
 import {
-  ArrowUp, Eye, Code2, RefreshCw, ExternalLink, Loader2,
-  MousePointerClick, Github, X, Wand2, ListChecks, Zap, AlertTriangle, MessageSquare, Globe, Paperclip, FileText,
+  ArrowUp, Eye, Code2, RefreshCw, ExternalLink, Check, Loader2,
+  MousePointerClick, Github, X, Wand2, ListChecks, Zap, AlertTriangle,
+  MessageSquare, Globe, Paperclip, FileText,
+  Menu, Settings, RotateCcw, LogOut,
 } from "lucide-react";
 import { getApp, saveApp, titleFromPrompt, type SavedApp } from "@/lib/apps";
 import { loadProfile, type Profile } from "@/lib/profile";
 import { loadModel, saveModel, type ModelId } from "@/lib/models";
 import { getCredits, deductCredit, hasCredits, initCredits } from "@/lib/credits";
+import { signOut } from "@/lib/auth";
 
 type SearchParams = { prompt?: string; model?: ModelId };
 
@@ -236,6 +239,8 @@ function AppPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const [gh, setGh] = useState<{ status: "idle" | "pushing" | "done" | "error"; url?: string; error?: string }>({ status: "idle" });
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Track which messages are "plan" type
   const [planMsgIndices, setPlanMsgIndices] = useState<Set<number>>(new Set());
@@ -247,6 +252,29 @@ function AppPage() {
     initCredits();
     setCredits(getCredits());
   }, [initialModel]);
+
+  // Close hamburger menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    if (menuOpen) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
+  const resetProject = () => {
+    if (!confirm("Reset this project? The current HTML will be cleared and you can start fresh.")) return;
+    setHtml(BLANK_HTML);
+    setMessages([]);
+    setPlanMsgIndices(new Set());
+    setMenuOpen(false);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate({ to: "/login" });
+    setMenuOpen(false);
+  };
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
 
@@ -502,8 +530,58 @@ function AppPage() {
           {gh.status === "done" && gh.url && (
             <a href={gh.url} target="_blank" rel="noreferrer" className="text-xs text-brand hover:underline">Open</a>
           )}
-          <Link to="/dashboard" className="text-sm text-[#64748b] hover:text-[#94a3b8] ml-1 transition-colors">← Back</Link>
+          <Link to="/" className="text-sm text-[#64748b] hover:text-[#94a3b8] ml-1 transition-colors">← Back</Link>
           <UserMenu />
+
+          {/* ── Hamburger menu ── */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              className={`grid place-items-center h-8 w-8 rounded-lg border transition-colors ${menuOpen ? "bg-[#1e293b] border-[#334155] text-white" : "border-[#1e293b] bg-[#0f1117] text-[#64748b] hover:text-[#94a3b8] hover:bg-[#1e293b]"}`}
+              title="More options"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-[#1e293b] bg-[#0a0d14] shadow-2xl z-50 overflow-hidden py-1.5">
+                <Link
+                  to="/settings"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#94a3b8] hover:bg-[#1e293b] hover:text-white transition-colors"
+                >
+                  <Settings className="h-3.5 w-3.5" /> Settings
+                </Link>
+                <Link
+                  to="/"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#94a3b8] hover:bg-[#1e293b] hover:text-white transition-colors"
+                >
+                  <ArrowUp className="h-3.5 w-3.5 rotate-[-90deg]" /> All Projects
+                </Link>
+                <button
+                  onClick={resetProject}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#94a3b8] hover:bg-[#1e293b] hover:text-white transition-colors"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" /> Reset project
+                </button>
+                <div className="my-1 h-px bg-[#1e293b] mx-3" />
+                <button
+                  onClick={() => { const blob = new Blob([html], { type: "text/html" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${title.replace(/\s+/g,"-").toLowerCase()}.html`; a.click(); setMenuOpen(false); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#94a3b8] hover:bg-[#1e293b] hover:text-white transition-colors"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" /> Download HTML
+                </button>
+                <div className="my-1 h-px bg-[#1e293b] mx-3" />
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  <LogOut className="h-3.5 w-3.5" /> Sign Out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
