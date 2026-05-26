@@ -28,11 +28,11 @@ export function UserMenu() {
     setProfile(p);
     setDraft(p);
     setCredits(getCredits());
-    setPremium(isPremium());
     setRecentApps(loadApps().slice(0, 3));
 
     const { data: { subscription } } = onAuthChange((user) => {
       setAuthUser(user);
+      setPremium(isPremium(user?.email));
       if (user) {
         const currentProfile = loadProfile();
         if (!currentProfile.name || currentProfile.name === "You") {
@@ -43,16 +43,18 @@ export function UserMenu() {
         }
       }
     });
+    // set initial premium from localStorage
+    setPremium(isPremium());
     return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
     if (open) {
       setCredits(getCredits());
-      setPremium(isPremium());
+      setPremium(isPremium(authUser?.email));
       setRecentApps(loadApps().slice(0, 3));
     }
-  }, [open]);
+  }, [open, authUser]);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {

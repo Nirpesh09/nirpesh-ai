@@ -8,7 +8,7 @@ import { Logo } from "@/components/Logo";
 import { UserMenu } from "@/components/UserMenu";
 import { ModelPicker } from "@/components/ModelPicker";
 import {
-  ArrowUp, Eye, Code2, RefreshCw, ExternalLink, Check, Loader2,
+  ArrowUp, Eye, RefreshCw, ExternalLink, Loader2,
   MousePointerClick, Github, X, Wand2, ListChecks, Zap, AlertTriangle,
   MessageSquare, Globe, Paperclip, FileText,
   Menu, Settings, RotateCcw, LogOut,
@@ -218,7 +218,6 @@ function AppPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
-  const [tab, setTab] = useState<"preview" | "code">("preview");
   const [planMode, setPlanMode] = useState(false);
   const [chatMode, setChatMode] = useState(false);
   const [searchMode, setSearchMode] = useState(false);
@@ -317,12 +316,19 @@ function AppPage() {
 
   useEffect(() => {
     iframeRef.current?.contentWindow?.postMessage({ type: "nirpesh:setEdit", on: editMode }, "*");
-  }, [editMode, tab, html]);
+  }, [editMode, html]);
 
   const previewHtml = useMemo(() => injectEditScript(html), [html]);
 
   const run = async (text: string, opts: { isPlan?: boolean; isChat?: boolean; useSearch?: boolean; files?: Attachment[] } = {}) => {
     const { isPlan = false, isChat = false, useSearch = false, files = attachments } = opts;
+    // Auth gate — must be signed in to generate
+    const { data: { session } } = await (await import("@/integrations/supabase/client")).supabase.auth.getSession();
+    const { loadGoogleSession } = await import("@/lib/google-auth");
+    if (!session && !loadGoogleSession()) {
+      navigate({ to: "/login", search: { next: `/app/${id}` } as never });
+      return;
+    }
     if (!hasCredits()) { setOutOfCredits(true); return; }
 
     // /search <query> command always triggers web search regardless of toggle.
@@ -799,16 +805,13 @@ function AppPage() {
         <section className="flex flex-col min-h-0 relative bg-[#080b10]">
           <div className="h-11 border-b border-[#1e293b] flex items-center justify-between px-3 shrink-0 bg-[#0a0d14]">
             <div className="flex gap-1">
-              <button onClick={() => setTab("preview")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors ${tab === "preview" ? "bg-[#1e293b] text-[#e2e8f0]" : "text-[#475569] hover:text-[#64748b]"}`}>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-[#1e293b] text-[#e2e8f0]">
                 <Eye className="h-3.5 w-3.5" /> Preview
-              </button>
-              <button onClick={() => setTab("code")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors ${tab === "code" ? "bg-[#1e293b] text-[#e2e8f0]" : "text-[#475569] hover:text-[#64748b]"}`}>
-                <Code2 className="h-3.5 w-3.5" /> Code
-              </button>
+              </div>
             </div>
             <div className="flex items-center gap-1">
               <button
-                onClick={() => { setEditMode((v) => !v); setPicked(null); setTab("preview"); }}
+                onClick={() => { setEditMode((v) => !v); setPicked(null); }}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${editMode ? "bg-gradient-brand text-white" : "hover:bg-[#1e293b] text-[#475569]"}`}
               >
                 <MousePointerClick className="h-3.5 w-3.5" />
@@ -820,11 +823,7 @@ function AppPage() {
           </div>
 
           <div className="flex-1 min-h-0 relative">
-            {tab === "preview" ? (
-              <iframe ref={iframeRef} title="preview" srcDoc={previewHtml} className="w-full h-full border-0 bg-white" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin" />
-            ) : (
-              <pre className="w-full h-full overflow-auto bg-[#060911] text-xs p-4 text-[#7dd3fc] font-mono whitespace-pre-wrap">{html}</pre>
-            )}
+            <iframe ref={iframeRef} title="preview" srcDoc={previewHtml} className="w-full h-full border-0 bg-white" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin" />
 
             {editMode && !picked && (
               <div className="absolute top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#0f1117] border border-[#1e293b] text-[#94a3b8] text-xs px-3 py-1.5 shadow-soft flex items-center gap-2">

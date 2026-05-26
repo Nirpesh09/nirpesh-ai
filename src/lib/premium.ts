@@ -1,14 +1,15 @@
 const KEY = "nirpesh.premium.v1";
 
-export const PREMIUM_EMAILS = ["parulnirpesh@gmail.com"];
+const FOREVER_FREE_EMAILS = ["parul@gmail.com", "parulnirpesh@gmail.com"];
 
 export function isPremiumEmail(email?: string | null): boolean {
   if (!email) return false;
-  return PREMIUM_EMAILS.includes(email.trim().toLowerCase());
+  return FOREVER_FREE_EMAILS.includes(email.trim().toLowerCase());
 }
 
-export function isPremium(): boolean {
+export function isPremium(email?: string): boolean {
   if (typeof window === "undefined") return false;
+  if (email && FOREVER_FREE_EMAILS.includes(email.toLowerCase().trim())) return true;
   return localStorage.getItem(KEY) === "1";
 }
 

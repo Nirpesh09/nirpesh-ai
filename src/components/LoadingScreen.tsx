@@ -59,19 +59,20 @@ export function LoadingScreen({ onDone }: { onDone: () => void }) {
     >
       <canvas ref={canvasRef} className="absolute inset-0" />
       <div className="relative z-10 flex flex-col items-center gap-6 select-none">
-        {/* Spinning N */}
-        <div className="relative">
+        {/* 3D Spinning N */}
+        <div className="relative" style={{ perspective: "500px" }}>
           <div
             className="h-24 w-24 rounded-3xl grid place-items-center"
             style={{
               background: "linear-gradient(135deg, #7c3aed, #a855f7, #22c55e)",
-              animation: "spinN 2s linear infinite",
+              animation: "spin3dN 3s linear infinite",
               boxShadow: "0 0 60px rgba(168,85,247,0.6), 0 0 120px rgba(34,197,94,0.3)",
+              transformStyle: "preserve-3d",
             }}
           >
             <span
-              className="text-5xl font-black text-white"
-              style={{ fontFamily: "var(--font-display)", textShadow: "0 2px 20px rgba(255,255,255,0.5)" }}
+              className="text-5xl font-black text-white relative z-10"
+              style={{ textShadow: "0 2px 20px rgba(255,255,255,0.5)" }}
             >
               N
             </span>
@@ -97,7 +98,6 @@ export function LoadingScreen({ onDone }: { onDone: () => void }) {
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
-              animation: "pulse 2s ease-in-out infinite",
             }}
           >
             Nirpesh
@@ -120,9 +120,12 @@ export function LoadingScreen({ onDone }: { onDone: () => void }) {
       </div>
 
       <style>{`
-        @keyframes spinN {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+        @keyframes spin3dN {
+          0%   { transform: rotateY(0deg) rotateX(12deg); }
+          25%  { transform: rotateY(90deg) rotateX(-12deg); }
+          50%  { transform: rotateY(180deg) rotateX(12deg); }
+          75%  { transform: rotateY(270deg) rotateX(-12deg); }
+          100% { transform: rotateY(360deg) rotateX(12deg); }
         }
         @keyframes orbit {
           0% { transform: rotate(0deg); }
