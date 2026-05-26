@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Loader2, Mail, Lock, User, Zap } from "lucide-react";
+import { X, Loader2, Mail, Lock, User, Zap, KeyRound, ArrowLeft } from "lucide-react";
 import { signIn, signUp, notifyAuthChange } from "@/lib/auth";
 import { renderGoogleButton, type GoogleUser } from "@/lib/google-auth";
+import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
   onClose: () => void;
   onSuccess: () => void;
 };
+
+type Tab = "signin" | "signup" | "otp";
 
 export function AuthModal({ onClose, onSuccess }: Props) {
   const [tab, setTab] = useState<"signin" | "signup">("signin");
