@@ -25,7 +25,7 @@ RULES:
 5. NEVER include <html>, code blocks, or HTML tags. Pure conversation only.`;
 
 
-async function callMistral(messages: ChatMessage[]) {
+async function callMistral(messages: ChatMessage[], systemPrompt: string) {
   const apiKey = process.env.MISTRAL_API_KEY;
   if (!apiKey) throw new Error("MISTRAL_API_KEY is not configured");
   const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
@@ -33,7 +33,7 @@ async function callMistral(messages: ChatMessage[]) {
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "mistral-large-latest",
-      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
       temperature: 0.7,
       max_tokens: 4096,
     }),
@@ -43,7 +43,7 @@ async function callMistral(messages: ChatMessage[]) {
   return (json.choices?.[0]?.message?.content as string) ?? "";
 }
 
-async function callGemini(messages: ChatMessage[]) {
+async function callGemini(messages: ChatMessage[], systemPrompt: string) {
   const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) throw new Error("GOOGLE_API_KEY is not configured");
   const contents = messages.map((m) => ({
@@ -55,7 +55,7 @@ async function callGemini(messages: ChatMessage[]) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      systemInstruction: { parts: [{ text: systemPrompt }] },
       contents,
       generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
     }),
@@ -67,13 +67,15 @@ async function callGemini(messages: ChatMessage[]) {
 }
 
 export const chatWithNirpesh = createServerFn({ method: "POST" })
-  .inputValidator((input: { messages: ChatMessage[]; model?: ModelChoice }) => {
+  .inputValidator((input: { messages: ChatMessage[]; model?: ModelChoice; mode?: ChatMode }) => {
     if (!input || !Array.isArray(input.messages)) throw new Error("messages required");
-    return { messages: input.messages, model: input.model ?? "nirpesh" };
+    return { messages: input.messages, model: input.model ?? "nirpesh", mode: input.mode ?? "build" };
   })
   .handler(async ({ data }) => {
+    const systemPrompt = data.mode === "chat" ? CHAT_PROMPT : BUILD_PROMPT;
     const content = data.model === "nirpesh-g"
-      ? await callGemini(data.messages)
-      : await callMistral(data.messages);
+      ? await callGemini(data.messages, systemPrompt)
+      : await callMistral(data.messages, systemPrompt);
     return { content };
   });
+
