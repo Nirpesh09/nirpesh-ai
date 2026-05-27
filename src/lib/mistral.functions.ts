@@ -2,8 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 export type ModelChoice = "nirpesh" | "nirpesh-g";
+export type ChatMode = "build" | "chat";
 
-const SYSTEM_PROMPT = `You are Nirpesh, an expert AI web developer. The user is building a single-page web app inside a sandboxed iframe.
+const BUILD_PROMPT = `You are Nirpesh, an expert AI web developer. The user is building a single-page web app inside a sandboxed iframe.
 
 RULES:
 1. Always respond with a SINGLE complete, self-contained HTML document (including <!DOCTYPE html>, <html>, <head>, <body>, inline <style>, and inline <script>).
@@ -11,17 +12,20 @@ RULES:
 3. You may use the CDN Tailwind script (<script src="https://cdn.tailwindcss.com"></script>) and Google Fonts.
 4. When the user asks for changes, return the FULL updated HTML document, not a diff.
 5. Wrap the full HTML in a fenced code block: \`\`\`html ... \`\`\`
-6. IMPORTANT: Before the code block, describe what you did in a clear, human-friendly way. Use a short intro sentence, then 2-5 bullet points (using • character) explaining the specific changes you made — like colors applied, features added, layout changes, interactions added, etc. Be specific and concise. After the code block add nothing.
-7. Example format:
-   Here's what I built for you:
-   • Created a responsive navbar with logo and links
-   • Used a dark background with neon green accents
-   • Added a hero section with animated text
-   • Included smooth scroll behavior
-
+6. IMPORTANT: Before the code block, describe what you did in a clear, human-friendly way. Use a short intro sentence, then 2-5 bullet points (using • character) explaining the specific changes you made. After the code block add nothing.
 8. Think carefully and produce production-quality work.`;
 
-async function callMistral(messages: ChatMessage[]) {
+const CHAT_PROMPT = `You are Nirpesh, a friendly AI web-app collaborator. The user wants to DISCUSS their app — do NOT write code in this turn.
+
+RULES:
+1. Reply conversationally, like a thoughtful designer/developer talking with the user.
+2. Ask clarifying questions when the request is ambiguous (color, layout, features, audience, tone).
+3. Suggest 2-4 concrete options or improvements using • bullets where helpful.
+4. Be concise (under ~150 words). End with a question or a "Want me to build this?" prompt.
+5. NEVER include <html>, code blocks, or HTML tags. Pure conversation only.`;
+
+
+async function callMistral(messages: ChatMessage[], systemPrompt: string) {
   const apiKey = process.env.MISTRAL_API_KEY;
   if (!apiKey) throw new Error("MISTRAL_API_KEY is not configured");
   const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
@@ -29,7 +33,7 @@ async function callMistral(messages: ChatMessage[]) {
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "mistral-large-latest",
-      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
       temperature: 0.7,
       max_tokens: 4096,
     }),
@@ -39,7 +43,7 @@ async function callMistral(messages: ChatMessage[]) {
   return (json.choices?.[0]?.message?.content as string) ?? "";
 }
 
-async function callGemini(messages: ChatMessage[]) {
+async function callGemini(messages: ChatMessage[], systemPrompt: string) {
   const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) throw new Error("GOOGLE_API_KEY is not configured");
   const contents = messages.map((m) => ({
@@ -51,7 +55,7 @@ async function callGemini(messages: ChatMessage[]) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      systemInstruction: { parts: [{ text: systemPrompt }] },
       contents,
       generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
     }),
@@ -63,13 +67,15 @@ async function callGemini(messages: ChatMessage[]) {
 }
 
 export const chatWithNirpesh = createServerFn({ method: "POST" })
-  .inputValidator((input: { messages: ChatMessage[]; model?: ModelChoice }) => {
+  .inputValidator((input: { messages: ChatMessage[]; model?: ModelChoice; mode?: ChatMode }) => {
     if (!input || !Array.isArray(input.messages)) throw new Error("messages required");
-    return { messages: input.messages, model: input.model ?? "nirpesh" };
+    return { messages: input.messages, model: input.model ?? "nirpesh", mode: input.mode ?? "build" };
   })
   .handler(async ({ data }) => {
+    const systemPrompt = data.mode === "chat" ? CHAT_PROMPT : BUILD_PROMPT;
     const content = data.model === "nirpesh-g"
-      ? await callGemini(data.messages)
-      : await callMistral(data.messages);
+      ? await callGemini(data.messages, systemPrompt)
+      : await callMistral(data.messages, systemPrompt);
     return { content };
   });
+
