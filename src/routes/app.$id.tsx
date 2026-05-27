@@ -8,7 +8,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { ModelPicker } from "@/components/ModelPicker";
 import {
   ArrowUp, Eye, Code2, RefreshCw, ExternalLink, Check, Loader2,
-  MousePointerClick, Github, X, Wand2, ListChecks, Zap, AlertTriangle,
+  MousePointerClick, Github, X, Wand2, ListChecks, Zap, AlertTriangle, MessageSquare,
 } from "lucide-react";
 import { getApp, saveApp, titleFromPrompt, type SavedApp } from "@/lib/apps";
 import { loadProfile, type Profile } from "@/lib/profile";
