@@ -202,23 +202,41 @@ function Home() {
             <div className="col-span-3 text-right">Last Modified</div>
           </div>
 
-          {apps.length === 0 ? (
+          {visibleApps.length === 0 ? (
             <div className="px-4 py-12 text-center text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
-              No tasks yet. Describe an app above to get started.
+              {view === "deployed" ? "No deployed apps yet. Click Deploy on any task to publish it." : "No tasks yet. Describe an app above to get started."}
             </div>
           ) : (
-            apps.map((a) => (
+            visibleApps.map((a) => (
               <div key={a.id} className="grid grid-cols-12 px-4 py-3 items-center text-sm group hover:bg-white/[0.02]"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                <div className="col-span-2 font-mono text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+                <div className="col-span-2 font-mono text-xs flex items-center gap-1.5" style={{ color: "rgba(255,255,255,0.5)" }}>
                   NRP — {a.id.slice(0, 5)}
+                  {a.deployed && (
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#22d3ee", boxShadow: "0 0 6px #22d3ee" }} title="Deployed" />
+                  )}
                 </div>
                 <Link to="/app/$id" params={{ id: a.id }} className="col-span-7 min-w-0">
                   <div className="font-medium truncate text-white">{a.title}</div>
                   <div className="text-xs truncate mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>{a.prompt}</div>
                 </Link>
-                <div className="col-span-3 flex items-center justify-end gap-2 text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
-                  {timeAgo(a.updatedAt)}
+                <div className="col-span-3 flex items-center justify-end gap-1 text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+                  <span className="mr-1 hidden sm:inline">{timeAgo(a.updatedAt)}</span>
+                  {a.deployed ? (
+                    <button onClick={() => openLive(a)}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-colors"
+                      style={{ borderColor: "rgba(34,211,238,0.3)", background: "rgba(34,211,238,0.1)", color: "#67e8f9" }}
+                      title="Open live app">
+                      <ExternalLink className="h-3 w-3" /> View live
+                    </button>
+                  ) : (
+                    <button onClick={() => deploy(a.id)}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-colors hover:bg-white/5"
+                      style={{ borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)" }}
+                      title="Deploy this app">
+                      <Rocket className="h-3 w-3" /> Deploy
+                    </button>
+                  )}
                   <button onClick={() => remove(a.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/5" style={{ color: "#f87171" }}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -231,9 +249,10 @@ function Home() {
           )}
 
           <div className="flex items-center justify-between px-4 py-2.5 text-xs" style={{ color: "rgba(255,255,255,0.4)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-            <div>Showing {apps.length === 0 ? 0 : 1}-{apps.length} out of {apps.length}</div>
+            <div>Showing {visibleApps.length === 0 ? 0 : 1}-{visibleApps.length} out of {visibleApps.length}</div>
             <div>Tasks per page: 50</div>
           </div>
+
         </div>
       </section>
 
