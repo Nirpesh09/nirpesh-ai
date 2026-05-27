@@ -487,11 +487,23 @@ function AppPage() {
 
           {/* Input */}
           <form onSubmit={onSubmit} className="p-3 border-t border-[#1e293b] bg-[#0a0d14]">
-            {/* Plan mode toggle */}
-            <div className="flex items-center gap-2 mb-2">
+            {/* Mode toggles */}
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <button
                 type="button"
-                onClick={() => setPlanMode((v) => !v)}
+                onClick={() => { setChatMode((v) => !v); if (!chatMode) setPlanMode(false); }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
+                  chatMode
+                    ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
+                    : "border-[#1e293b] bg-[#0f1117] text-[#475569] hover:text-[#64748b]"
+                }`}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                {chatMode ? "Discuss mode ON" : "Discuss"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setPlanMode((v) => !v); if (!planMode) setChatMode(false); }}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
                   planMode
                     ? "bg-blue-500/20 border-blue-500/40 text-blue-400"
@@ -501,9 +513,8 @@ function AppPage() {
                 <ListChecks className="h-3.5 w-3.5" />
                 {planMode ? "Plan mode ON" : "Plan first"}
               </button>
-              {planMode && (
-                <span className="text-[10px] text-[#475569]">AI will plan before building</span>
-              )}
+              {chatMode && <span className="text-[10px] text-[#475569]">Nirpesh will chat — no code yet</span>}
+              {planMode && <span className="text-[10px] text-[#475569]">AI will plan before building</span>}
             </div>
 
             <div className="rounded-xl border border-[#1e293b] bg-[#0f1117] focus-within:border-brand/40 transition-colors">
@@ -512,7 +523,7 @@ function AppPage() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(e); } }}
                 rows={2}
-                placeholder={loading ? "Nirpesh is working…" : planMode ? "Describe your app — Nirpesh will plan it first…" : "Ask Nirpesh to build or change something…"}
+                placeholder={loading ? "Nirpesh is working…" : chatMode ? "Chat with Nirpesh about your app…" : planMode ? "Describe your app — Nirpesh will plan it first…" : "Ask Nirpesh to build or change something…"}
                 className="w-full bg-transparent resize-none px-3 py-2.5 text-sm outline-none placeholder:text-[#334155] text-[#e2e8f0]"
                 disabled={loading}
               />
