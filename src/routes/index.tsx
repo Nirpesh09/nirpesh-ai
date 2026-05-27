@@ -67,6 +67,8 @@ function Home() {
   };
 
   const remove = (id: string) => { deleteApp(id); setApps(loadApps()); };
+  const deploy = (id: string) => { deployApp(id); setApps(loadApps()); };
+  const visibleApps = view === "deployed" ? apps.filter((a) => a.deployed) : apps;
 
   const current = TABS.find((t) => t.id === tab)!;
 
