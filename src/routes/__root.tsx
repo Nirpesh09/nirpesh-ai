@@ -82,8 +82,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Nirpesh AI" },
       { name: "twitter:description", content: "Nirpesh AI is a cutting-edge, full-stack AI development assistant engineered to revolutionize how web applications are built. Inspired by powerful modern platfo" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5e1843fa-7c42-45c1-832c-29efc21e4d53/id-preview-e3564c4d--c8667ffe-3dc4-4e29-a926-ec7135fb0a35.lovable.app-1779608578597.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5e1843fa-7c42-45c1-832c-29efc21e4d53/id-preview-e3564c4d--c8667ffe-3dc4-4e29-a926-ec7135fb0a35.lovable.app-1779608578597.png" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/ad294b90-4a60-4f36-9b06-92be26efeb27" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/ad294b90-4a60-4f36-9b06-92be26efeb27" },
     ],
     links: [
       {
