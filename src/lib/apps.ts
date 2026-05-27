@@ -6,9 +6,27 @@ export type SavedApp = {
   messages: { role: "system" | "user" | "assistant"; content: string }[];
   createdAt: number;
   updatedAt: number;
+  deployed?: boolean;
+  deployedAt?: number;
 };
 
 const KEY = "nirpesh.apps.v1";
+
+export function openLive(app: SavedApp) {
+  if (typeof window === "undefined") return;
+  const blob = new Blob([app.html], { type: "text/html" });
+  window.open(URL.createObjectURL(blob), "_blank", "noopener");
+}
+
+export function deployApp(id: string): SavedApp | null {
+  const app = getApp(id);
+  if (!app) return null;
+  const updated: SavedApp = { ...app, deployed: true, deployedAt: Date.now() };
+  saveApp(updated);
+  openLive(updated);
+  return updated;
+}
+
 
 export function loadApps(): SavedApp[] {
   if (typeof window === "undefined") return [];
