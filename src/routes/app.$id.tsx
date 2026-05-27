@@ -187,6 +187,7 @@ function AppPage() {
   const [stepIdx, setStepIdx] = useState(0);
   const [tab, setTab] = useState<"preview" | "code">("preview");
   const [planMode, setPlanMode] = useState(false);
+  const [chatMode, setChatMode] = useState(false);
   const [credits, setCredits] = useState(10);
   const [outOfCredits, setOutOfCredits] = useState(false);
 
