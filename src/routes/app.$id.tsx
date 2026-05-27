@@ -259,7 +259,8 @@ function AppPage() {
 
   const previewHtml = useMemo(() => injectEditScript(html), [html]);
 
-  const run = async (text: string, isPlan = false) => {
+  const run = async (text: string, opts: { isPlan?: boolean; isChat?: boolean } = {}) => {
+    const { isPlan = false, isChat = false } = opts;
     if (!hasCredits()) { setOutOfCredits(true); return; }
 
     const userMsg: ChatMessage = { role: "user", content: text };
@@ -268,7 +269,6 @@ function AppPage() {
     setInput("");
     setLoading(true);
 
-    // Deduct credit
     deductCredit();
     setCredits(getCredits());
 
@@ -282,14 +282,14 @@ function AppPage() {
       : next;
 
     try {
-      const res = await chat({ data: { messages: queryMsgs, model } });
+      const res = await chat({ data: { messages: queryMsgs, model, mode: isChat ? "chat" : "build" } });
       const assistantMsg: ChatMessage = { role: "assistant", content: res.content };
       const finalMsgs = [...next, assistantMsg];
       setMessages(finalMsgs);
 
       if (isPlan) {
         setPlanMsgIndices((prev) => new Set([...prev, finalMsgs.length - 1]));
-      } else {
+      } else if (!isChat) {
         const code = extractHtml(res.content) ?? html;
         setHtml(code);
         const now = Date.now();
