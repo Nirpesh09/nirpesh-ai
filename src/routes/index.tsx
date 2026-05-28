@@ -291,6 +291,16 @@ function Home() {
       {showAuth && (
         <AuthModal onClose={() => { setShowAuth(false); setPendingPrompt(null); }} onSuccess={handleAuthSuccess} />
       )}
+
+      <SideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+
+      {deployConfirm && (
+        <DeployConfirmModal
+          appTitle={deployConfirm.title}
+          onCancel={() => setDeployConfirm(null)}
+          onConfirm={confirmDeploy}
+        />
+      )}
     </div>
   );
 }
