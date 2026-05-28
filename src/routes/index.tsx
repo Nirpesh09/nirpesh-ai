@@ -1,11 +1,13 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
-import { ArrowUp, Trash2, Layers, Smartphone, LayoutTemplate, MoreHorizontal, RefreshCw, Globe, ClipboardList, Rocket, ExternalLink } from "lucide-react";
+import { ArrowUp, Trash2, Layers, Smartphone, LayoutTemplate, MoreHorizontal, RefreshCw, Globe, ClipboardList, Rocket, ExternalLink, Menu } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { UserMenu } from "@/components/UserMenu";
 import { ModelPicker } from "@/components/ModelPicker";
 import { MatrixRain } from "@/components/MatrixRain";
 import { AuthModal } from "@/components/AuthModal";
+import { SideMenu } from "@/components/SideMenu";
+import { DeployConfirmModal } from "@/components/DeployConfirmModal";
 import { loadApps, deleteApp, newId, deployApp, openLive, type SavedApp } from "@/lib/apps";
 import { loadModel, saveModel, type ModelId } from "@/lib/models";
 import { onAuthChange, type AuthUser } from "@/lib/auth";
@@ -40,6 +42,8 @@ function Home() {
   const [showAuth, setShowAuth] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
   const [view, setView] = useState<"recent" | "deployed">("recent");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deployConfirm, setDeployConfirm] = useState<SavedApp | null>(null);
 
   useEffect(() => {
     setApps(loadApps());
@@ -67,7 +71,12 @@ function Home() {
   };
 
   const remove = (id: string) => { deleteApp(id); setApps(loadApps()); };
-  const deploy = (id: string) => { deployApp(id); setApps(loadApps()); };
+  const confirmDeploy = () => {
+    if (!deployConfirm) return;
+    deployApp(deployConfirm.id);
+    setApps(loadApps());
+    setDeployConfirm(null);
+  };
   const visibleApps = view === "deployed" ? apps.filter((a) => a.deployed) : apps;
 
   const current = TABS.find((t) => t.id === tab)!;
@@ -79,7 +88,14 @@ function Home() {
 
       {/* Top nav */}
       <header className="relative z-10 mx-auto max-w-6xl px-5 h-14 flex items-center justify-between">
-        <Logo />
+        <div className="flex items-center gap-2">
+          <button onClick={() => setMenuOpen(true)}
+            className="p-2 rounded-lg hover:bg-white/5 text-white/80"
+            aria-label="Open menu">
+            <Menu className="h-5 w-5" />
+          </button>
+          <Logo />
+        </div>
         <div className="flex items-center gap-3">
           <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
             style={{ background: "linear-gradient(135deg, #fde68a, #fbbf24)", color: "#1f1300" }}>
@@ -88,6 +104,22 @@ function Home() {
           <UserMenu />
         </div>
       </header>
+
+      {/* Big wordmark */}
+      <div className="relative z-10 text-center pt-6 px-5">
+        <h1 className="font-extrabold tracking-tight leading-none select-none"
+          style={{
+            fontSize: "clamp(56px, 14vw, 140px)",
+            background: "linear-gradient(135deg, #fb923c 0%, #f97316 35%, #ef4444 70%, #dc2626 100%)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+            filter: "drop-shadow(0 8px 30px rgba(239,68,68,0.25))",
+            fontFamily: "'Space Grotesk', 'Inter', sans-serif",
+            letterSpacing: "-0.04em",
+          }}>
+          Nirpesh
+        </h1>
+      </div>
+
 
       {/* Hero */}
       <main className="relative z-10 mx-auto max-w-3xl px-5 pt-10 pb-10 text-center">
@@ -230,7 +262,7 @@ function Home() {
                       <ExternalLink className="h-3 w-3" /> View live
                     </button>
                   ) : (
-                    <button onClick={() => deploy(a.id)}
+                    <button onClick={() => setDeployConfirm(a)}
                       className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-colors hover:bg-white/5"
                       style={{ borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)" }}
                       title="Deploy this app">
@@ -258,6 +290,16 @@ function Home() {
 
       {showAuth && (
         <AuthModal onClose={() => { setShowAuth(false); setPendingPrompt(null); }} onSuccess={handleAuthSuccess} />
+      )}
+
+      <SideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+
+      {deployConfirm && (
+        <DeployConfirmModal
+          appTitle={deployConfirm.title}
+          onCancel={() => setDeployConfirm(null)}
+          onConfirm={confirmDeploy}
+        />
       )}
     </div>
   );
