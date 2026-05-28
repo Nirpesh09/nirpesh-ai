@@ -1,11 +1,13 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
-import { ArrowUp, Trash2, Layers, Smartphone, LayoutTemplate, MoreHorizontal, RefreshCw, Globe, ClipboardList, Rocket, ExternalLink } from "lucide-react";
+import { ArrowUp, Trash2, Layers, Smartphone, LayoutTemplate, MoreHorizontal, RefreshCw, Globe, ClipboardList, Rocket, ExternalLink, Menu } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { UserMenu } from "@/components/UserMenu";
 import { ModelPicker } from "@/components/ModelPicker";
 import { MatrixRain } from "@/components/MatrixRain";
 import { AuthModal } from "@/components/AuthModal";
+import { SideMenu } from "@/components/SideMenu";
+import { DeployConfirmModal } from "@/components/DeployConfirmModal";
 import { loadApps, deleteApp, newId, deployApp, openLive, type SavedApp } from "@/lib/apps";
 import { loadModel, saveModel, type ModelId } from "@/lib/models";
 import { onAuthChange, type AuthUser } from "@/lib/auth";
@@ -40,6 +42,8 @@ function Home() {
   const [showAuth, setShowAuth] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
   const [view, setView] = useState<"recent" | "deployed">("recent");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deployConfirm, setDeployConfirm] = useState<SavedApp | null>(null);
 
   useEffect(() => {
     setApps(loadApps());
@@ -67,7 +71,12 @@ function Home() {
   };
 
   const remove = (id: string) => { deleteApp(id); setApps(loadApps()); };
-  const deploy = (id: string) => { deployApp(id); setApps(loadApps()); };
+  const confirmDeploy = () => {
+    if (!deployConfirm) return;
+    deployApp(deployConfirm.id);
+    setApps(loadApps());
+    setDeployConfirm(null);
+  };
   const visibleApps = view === "deployed" ? apps.filter((a) => a.deployed) : apps;
 
   const current = TABS.find((t) => t.id === tab)!;
