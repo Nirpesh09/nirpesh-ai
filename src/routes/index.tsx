@@ -88,7 +88,14 @@ function Home() {
 
       {/* Top nav */}
       <header className="relative z-10 mx-auto max-w-6xl px-5 h-14 flex items-center justify-between">
-        <Logo />
+        <div className="flex items-center gap-2">
+          <button onClick={() => setMenuOpen(true)}
+            className="p-2 rounded-lg hover:bg-white/5 text-white/80"
+            aria-label="Open menu">
+            <Menu className="h-5 w-5" />
+          </button>
+          <Logo />
+        </div>
         <div className="flex items-center gap-3">
           <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
             style={{ background: "linear-gradient(135deg, #fde68a, #fbbf24)", color: "#1f1300" }}>
@@ -97,6 +104,22 @@ function Home() {
           <UserMenu />
         </div>
       </header>
+
+      {/* Big wordmark */}
+      <div className="relative z-10 text-center pt-6 px-5">
+        <h1 className="font-extrabold tracking-tight leading-none select-none"
+          style={{
+            fontSize: "clamp(56px, 14vw, 140px)",
+            background: "linear-gradient(135deg, #fb923c 0%, #f97316 35%, #ef4444 70%, #dc2626 100%)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+            filter: "drop-shadow(0 8px 30px rgba(239,68,68,0.25))",
+            fontFamily: "'Space Grotesk', 'Inter', sans-serif",
+            letterSpacing: "-0.04em",
+          }}>
+          Nirpesh
+        </h1>
+      </div>
+
 
       {/* Hero */}
       <main className="relative z-10 mx-auto max-w-3xl px-5 pt-10 pb-10 text-center">
@@ -239,7 +262,7 @@ function Home() {
                       <ExternalLink className="h-3 w-3" /> View live
                     </button>
                   ) : (
-                    <button onClick={() => deploy(a.id)}
+                    <button onClick={() => setDeployConfirm(a)}
                       className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-colors hover:bg-white/5"
                       style={{ borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)" }}
                       title="Deploy this app">
