@@ -46,7 +46,7 @@ function Landing() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+    <div className="min-h-screen text-white overflow-x-hidden" style={{ background: "hsl(220 20% 5%)" }}>
       <div className="fixed inset-0 z-0 pointer-events-none">
         <FloatingCode count={20} />
       </div>
