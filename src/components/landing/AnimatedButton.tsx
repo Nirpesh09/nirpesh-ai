@@ -20,7 +20,7 @@ export function AnimatedButton({ children, variant = "primary", className = "", 
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       className={`${baseClasses} ${variants[variant]} ${className}`}
-      {...(props as never)}
+      {...(props as Record<string, unknown>)}
     >
       <span className="relative z-10">{children}</span>
       {variant === "primary" && (
