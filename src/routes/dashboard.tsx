@@ -12,7 +12,7 @@ import { loadApps, deleteApp, newId, deployApp, openLive, type SavedApp } from "
 import { loadModel, saveModel, type ModelId } from "@/lib/models";
 import { onAuthChange, type AuthUser } from "@/lib/auth";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
       { title: "Nirpesh — Where ideas become reality" },
