@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
-export type ModelChoice = "nirpesh" | "nirpesh-g";
+export type ModelChoice = "nirpesh" | "nirpesh-g" | "nirpesh-d";
 export type ChatMode = "build" | "chat";
 
 const BUILD_PROMPT = `You are Nirpesh, an expert AI web developer. The user is building a single-page web app inside a sandboxed iframe.
@@ -66,6 +66,24 @@ async function callGemini(messages: ChatMessage[], systemPrompt: string) {
   return parts.map((p: { text?: string }) => p.text ?? "").join("");
 }
 
+async function callDeepSeek(messages: ChatMessage[], systemPrompt: string) {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) throw new Error("DEEPSEEK_API_KEY is not configured");
+  const res = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "deepseek-chat",
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
+      temperature: 0.7,
+      max_tokens: 4096,
+    }),
+  });
+  if (!res.ok) throw new Error(`DeepSeek ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const json = await res.json();
+  return (json.choices?.[0]?.message?.content as string) ?? "";
+}
+
 export const chatWithNirpesh = createServerFn({ method: "POST" })
   .inputValidator((input: { messages: ChatMessage[]; model?: ModelChoice; mode?: ChatMode }) => {
     if (!input || !Array.isArray(input.messages)) throw new Error("messages required");
@@ -73,9 +91,10 @@ export const chatWithNirpesh = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const systemPrompt = data.mode === "chat" ? CHAT_PROMPT : BUILD_PROMPT;
-    const content = data.model === "nirpesh-g"
-      ? await callGemini(data.messages, systemPrompt)
-      : await callMistral(data.messages, systemPrompt);
+    let content: string;
+    if (data.model === "nirpesh-g") content = await callGemini(data.messages, systemPrompt);
+    else if (data.model === "nirpesh-d") content = await callDeepSeek(data.messages, systemPrompt);
+    else content = await callMistral(data.messages, systemPrompt);
     return { content };
   });
 
