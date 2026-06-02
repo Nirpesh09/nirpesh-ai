@@ -46,7 +46,7 @@ function SpecBar({ spec, i }: { spec: typeof SPECS[0]; i: number }) {
     <motion.div
       initial={{ opacity: 0, x: -30 }}
       whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, rootMargin: "-40px" }}
+      viewport={{ once: true, margin: "-40px" }}
       transition={{ delay: i * 0.08, duration: 0.6 }}
       onViewportEnter={() => setVisible(true)}
       className="group relative p-5 rounded-2xl overflow-hidden"

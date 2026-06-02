@@ -597,16 +597,11 @@ export default function About() {
         <h2 className="text-5xl md:text-7xl font-orbitron font-black text-white mb-10">
           Join the <span className="text-cyan-400">Revolution</span>
         </h2>
-        <AnimatedButton 
-          as="a" 
-          href="https://nirpesh-ai.lovable.app" 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          variant="primary" 
-          className="text-xl px-12 py-6"
-        >
-          Get Started
-        </AnimatedButton>
+        <a href="https://nirpesh-ai.lovable.app" target="_blank" rel="noopener noreferrer">
+          <AnimatedButton variant="primary" className="text-xl px-12 py-6">
+            Get Started
+          </AnimatedButton>
+        </a>
       </section>
 
       <Footer />

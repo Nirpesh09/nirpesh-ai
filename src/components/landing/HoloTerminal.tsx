@@ -20,7 +20,8 @@ const CHAR_SPEED = 28; // ms per char
 const LINE_GAP = 180;  // ms between lines
 
 export function HoloTerminal({ className = "" }: { className?: string }) {
-  const [visibleLines, setVisibleLines] = useState<typeof LINES>([]);
+  type Line = { prompt: string | null; cmd: string | null; out: string | null };
+  const [visibleLines, setVisibleLines] = useState<Line[]>([]);
   const [typed, setTyped] = useState("");
   const [lineIdx, setLineIdx] = useState(0);
   const [charIdx, setCharIdx] = useState(0);
