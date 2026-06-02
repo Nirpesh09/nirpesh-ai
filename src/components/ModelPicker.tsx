@@ -24,7 +24,7 @@ export function ModelPicker({ value, onChange, align = "left" }: {
   const current = MODELS.find((m) => m.id === value) ?? MODELS[0];
 
   const handleSelect = (id: ModelId) => {
-    if (id === "nirpesh-g" && !premium) {
+    if ((id === "nirpesh-g" || id === "nirpesh-d") && !premium) {
       setOpen(false);
       setShowPremium(true);
       return;
@@ -35,7 +35,6 @@ export function ModelPicker({ value, onChange, align = "left" }: {
 
   const handleUnlocked = () => {
     setPremium(true);
-    onChange("nirpesh-g");
   };
 
   return (
@@ -48,7 +47,7 @@ export function ModelPicker({ value, onChange, align = "left" }: {
         >
           <span className={`h-2 w-2 rounded-full bg-gradient-to-br ${current.gradient}`} />
           {current.label}
-          {current.id === "nirpesh-g" && !premium && (
+          {(current.id === "nirpesh-g" || current.id === "nirpesh-d") && !premium && (
             <Crown className="h-3 w-3 text-yellow-500 ml-0.5" />
           )}
           <ChevronDown className="h-3 w-3 opacity-60" />
@@ -58,7 +57,7 @@ export function ModelPicker({ value, onChange, align = "left" }: {
           <div className={`absolute z-50 mt-1.5 w-68 rounded-xl border bg-card shadow-soft p-1 ${align === "right" ? "right-0" : "left-0"}`}
             style={{ minWidth: "260px" }}>
             {MODELS.map((m) => {
-              const locked = m.id === "nirpesh-g" && !premium;
+              const locked = (m.id === "nirpesh-g" || m.id === "nirpesh-d") && !premium;
               return (
                 <button
                   key={m.id}
