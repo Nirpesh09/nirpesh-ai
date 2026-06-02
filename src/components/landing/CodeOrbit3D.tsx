@@ -19,7 +19,7 @@ const RING_RADII = [90, 155, 210];
 const RING_DURATION = [14, 22, 30];
 const RING_TILT = [12, 20, 28];
 
-export function CodeOrbit3D({ className = "" }: { className?: string }) {
+export function CodeOrbit3D({ className = "", style }: { className?: string; style?: React.CSSProperties }) {
   const byRing = ORBIT_ITEMS.reduce<Record<number, typeof ORBIT_ITEMS>>((acc, item) => {
     if (!acc[item.ring]) acc[item.ring] = [];
     acc[item.ring].push(item);
