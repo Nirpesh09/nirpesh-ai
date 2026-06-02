@@ -29,7 +29,7 @@ export function CodeOrbit3D({ className = "", style }: { className?: string; sty
   return (
     <div
       className={`relative flex items-center justify-center ${className}`}
-      style={{ perspective: "700px" }}
+      style={{ perspective: "700px", ...style }}
     >
       <div style={{ transformStyle: "preserve-3d", position: "relative", width: 500, height: 500 }}>
 
