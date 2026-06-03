@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
-import { ArrowUp, Trash2, Layers, Smartphone, LayoutTemplate, MoreHorizontal, RefreshCw, Globe, ClipboardList, Rocket, ExternalLink, Menu } from "lucide-react";
+import { ArrowUp, Trash2, Layers, Smartphone, LayoutTemplate, MoreHorizontal, RefreshCw, Globe, ClipboardList, Rocket, ExternalLink, Menu, Bot, ArrowRight, Sparkles } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { UserMenu } from "@/components/UserMenu";
 import { ModelPicker } from "@/components/ModelPicker";
@@ -11,6 +11,7 @@ import { DeployConfirmModal } from "@/components/DeployConfirmModal";
 import { loadApps, deleteApp, newId, deployApp, openLive, type SavedApp } from "@/lib/apps";
 import { loadModel, saveModel, type ModelId } from "@/lib/models";
 import { onAuthChange, type AuthUser } from "@/lib/auth";
+import { ensurePremiumForEmail } from "@/lib/premium";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
