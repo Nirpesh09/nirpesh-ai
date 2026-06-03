@@ -49,14 +49,18 @@ function Home() {
   useEffect(() => {
     setApps(loadApps());
     setModel(loadModel());
-    const { data: { subscription } } = onAuthChange((u) => setAuthUser(u));
+    const { data: { subscription } } = onAuthChange((u) => {
+      setAuthUser(u);
+      ensurePremiumForEmail(u?.email);
+    });
     return () => subscription.unsubscribe();
   }, []);
 
-  const doNavigate = useCallback((text: string) => {
-    saveModel(model);
+  const doNavigate = useCallback((text: string, forceModel?: ModelId) => {
+    const m = forceModel ?? model;
+    if (forceModel) { setModel(forceModel); saveModel(forceModel); } else { saveModel(model); }
     const id = newId();
-    navigate({ to: "/app/$id", params: { id }, search: { prompt: text } as never });
+    navigate({ to: "/app/$id", params: { id }, search: { prompt: text, model: m } as never });
   }, [model, navigate]);
 
   const start = (seed?: string) => {
@@ -64,6 +68,12 @@ function Home() {
     if (!text) return;
     if (!authUser) { setPendingPrompt(text); setShowAuth(true); return; }
     doNavigate(text);
+  };
+
+  const launchSuperagent = () => {
+    const seed = prompt.trim() || "Plan and build a complete app end-to-end. Ask clarifying questions, then deliver.";
+    if (!authUser) { setPendingPrompt(seed); setShowAuth(true); return; }
+    doNavigate(`[Superagent] ${seed}`, "nirpesh-d");
   };
 
   const handleAuthSuccess = () => {
