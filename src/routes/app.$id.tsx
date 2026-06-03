@@ -15,11 +15,12 @@ import { loadProfile, type Profile } from "@/lib/profile";
 import { loadModel, saveModel, type ModelId } from "@/lib/models";
 import { getCredits, deductCredit, hasCredits, initCredits } from "@/lib/credits";
 
-type SearchParams = { prompt?: string };
+type SearchParams = { prompt?: string; model?: ModelId };
 
 export const Route = createFileRoute("/app/$id")({
   validateSearch: (s: Record<string, unknown>): SearchParams => ({
     prompt: typeof s.prompt === "string" ? s.prompt : undefined,
+    model: (s.model === "nirpesh" || s.model === "nirpesh-g" || s.model === "nirpesh-d") ? s.model : undefined,
   }),
   head: () => ({ meta: [{ title: "Building with Nirpesh" }] }),
   component: AppPage,
