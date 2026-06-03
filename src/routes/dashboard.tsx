@@ -185,11 +185,6 @@ function Home() {
             const active = tab === t.id;
             return (
               <button key={t.id} onClick={() => setTab(t.id)}
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            const active = tab === t.id;
-            return (
-              <button key={t.id} onClick={() => setTab(t.id)}
                 className="flex items-center gap-2 px-3.5 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors"
                 style={{
                   background: active ? "rgba(20,25,35,0.85)" : "transparent",
