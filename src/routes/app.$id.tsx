@@ -210,10 +210,11 @@ function AppPage() {
 
   useEffect(() => {
     setProfile(loadProfile());
-    setModel(loadModel());
+    if (initialModel) { setModel(initialModel); saveModel(initialModel); }
+    else setModel(loadModel());
     initCredits();
     setCredits(getCredits());
-  }, []);
+  }, [initialModel]);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
 
