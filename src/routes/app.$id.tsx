@@ -173,7 +173,7 @@ type Picked = { id: string; tag: string; text: string; outer: string };
 
 function AppPage() {
   const { id } = Route.useParams();
-  const { prompt: initial } = Route.useSearch();
+  const { prompt: initial, model: initialModel } = Route.useSearch();
   const navigate = useNavigate();
   const chat = useServerFn(chatWithNirpesh);
   const ghPush = useServerFn(pushToGithub);
