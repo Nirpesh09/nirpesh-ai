@@ -17,13 +17,18 @@ function RedirectHome() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Open the Replit landing in a new tab, then send the user straight to the prompt page.
-    try {
-      window.open(REPLIT_URL, "_blank", "noopener,noreferrer");
-    } catch {
-      // ignore popup blockers — user can click the manual link below
-    }
-    navigate({ to: "/dashboard", replace: true });
+    // Defer to next tick so hydration completes before we navigate.
+    const t = setTimeout(() => {
+      try {
+        window.open(REPLIT_URL, "_blank", "noopener,noreferrer");
+      } catch {
+        /* popup blocked — ignore */
+      }
+      navigate({ to: "/dashboard", replace: true }).catch(() => {
+        window.location.replace("/dashboard");
+      });
+    }, 0);
+    return () => clearTimeout(t);
   }, [navigate]);
 
   return (
@@ -51,12 +56,10 @@ function RedirectHome() {
           Loading Nirpesh AI…
         </div>
         <a
-          href={REPLIT_URL}
-          target="_blank"
-          rel="noopener noreferrer"
+          href="/dashboard"
           style={{ color: "#22d3ee", fontSize: 18, textDecoration: "underline" }}
         >
-          Open landing page →
+          Continue to prompt page →
         </a>
       </div>
     </div>
