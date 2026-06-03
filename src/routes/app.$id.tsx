@@ -15,11 +15,12 @@ import { loadProfile, type Profile } from "@/lib/profile";
 import { loadModel, saveModel, type ModelId } from "@/lib/models";
 import { getCredits, deductCredit, hasCredits, initCredits } from "@/lib/credits";
 
-type SearchParams = { prompt?: string };
+type SearchParams = { prompt?: string; model?: ModelId };
 
 export const Route = createFileRoute("/app/$id")({
   validateSearch: (s: Record<string, unknown>): SearchParams => ({
     prompt: typeof s.prompt === "string" ? s.prompt : undefined,
+    model: (s.model === "nirpesh" || s.model === "nirpesh-g" || s.model === "nirpesh-d") ? s.model : undefined,
   }),
   head: () => ({ meta: [{ title: "Building with Nirpesh" }] }),
   component: AppPage,
@@ -172,7 +173,7 @@ type Picked = { id: string; tag: string; text: string; outer: string };
 
 function AppPage() {
   const { id } = Route.useParams();
-  const { prompt: initial } = Route.useSearch();
+  const { prompt: initial, model: initialModel } = Route.useSearch();
   const navigate = useNavigate();
   const chat = useServerFn(chatWithNirpesh);
   const ghPush = useServerFn(pushToGithub);
@@ -209,10 +210,11 @@ function AppPage() {
 
   useEffect(() => {
     setProfile(loadProfile());
-    setModel(loadModel());
+    if (initialModel) { setModel(initialModel); saveModel(initialModel); }
+    else setModel(loadModel());
     initCredits();
     setCredits(getCredits());
-  }, []);
+  }, [initialModel]);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
 

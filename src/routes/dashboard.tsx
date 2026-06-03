@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
-import { ArrowUp, Trash2, Layers, Smartphone, LayoutTemplate, MoreHorizontal, RefreshCw, Globe, ClipboardList, Rocket, ExternalLink, Menu } from "lucide-react";
+import { ArrowUp, Trash2, Layers, Smartphone, LayoutTemplate, MoreHorizontal, RefreshCw, Globe, ClipboardList, Rocket, ExternalLink, Menu, Bot, ArrowRight, Sparkles } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { UserMenu } from "@/components/UserMenu";
 import { ModelPicker } from "@/components/ModelPicker";
@@ -11,6 +11,7 @@ import { DeployConfirmModal } from "@/components/DeployConfirmModal";
 import { loadApps, deleteApp, newId, deployApp, openLive, type SavedApp } from "@/lib/apps";
 import { loadModel, saveModel, type ModelId } from "@/lib/models";
 import { onAuthChange, type AuthUser } from "@/lib/auth";
+import { ensurePremiumForEmail } from "@/lib/premium";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -48,14 +49,18 @@ function Home() {
   useEffect(() => {
     setApps(loadApps());
     setModel(loadModel());
-    const { data: { subscription } } = onAuthChange((u) => setAuthUser(u));
+    const { data: { subscription } } = onAuthChange((u) => {
+      setAuthUser(u);
+      ensurePremiumForEmail(u?.email);
+    });
     return () => subscription.unsubscribe();
   }, []);
 
-  const doNavigate = useCallback((text: string) => {
-    saveModel(model);
+  const doNavigate = useCallback((text: string, forceModel?: ModelId) => {
+    const m = forceModel ?? model;
+    if (forceModel) { setModel(forceModel); saveModel(forceModel); } else { saveModel(model); }
     const id = newId();
-    navigate({ to: "/app/$id", params: { id }, search: { prompt: text } as never });
+    navigate({ to: "/app/$id", params: { id }, search: { prompt: text, model: m } as never });
   }, [model, navigate]);
 
   const start = (seed?: string) => {
@@ -63,6 +68,12 @@ function Home() {
     if (!text) return;
     if (!authUser) { setPendingPrompt(text); setShowAuth(true); return; }
     doNavigate(text);
+  };
+
+  const launchSuperagent = () => {
+    const seed = prompt.trim() || "Plan and build a complete app end-to-end. Ask clarifying questions, then deliver.";
+    if (!authUser) { setPendingPrompt(seed); setShowAuth(true); return; }
+    doNavigate(`[Superagent] ${seed}`, "nirpesh-d");
   };
 
   const handleAuthSuccess = () => {
@@ -140,6 +151,32 @@ function Home() {
         <p className="mt-3 text-sm md:text-base" style={{ color: "rgba(255,255,255,0.55)" }}>
           Build fully functional apps and websites through simple conversations
         </p>
+
+        {/* Superagent CTA */}
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={launchSuperagent}
+            className="superagent-btn group relative flex items-center gap-3 pl-4 pr-3 py-3 rounded-2xl font-medium text-base transition-transform hover:scale-[1.02] active:scale-100"
+            style={{
+              background: "rgba(15,20,28,0.9)",
+              border: "1.5px solid transparent",
+              color: "white",
+              backgroundClip: "padding-box",
+              boxShadow: "0 8px 30px -10px rgba(34,211,238,0.4)",
+            }}
+          >
+            <span className="superagent-border" />
+            <span className="grid place-items-center h-8 w-8 rounded-xl shrink-0"
+              style={{ background: "linear-gradient(135deg, #22d3ee, #a78bfa)", color: "#0b0f1a" }}>
+              <Bot className="h-4 w-4" strokeWidth={2.5} />
+            </span>
+            <span className="flex items-center gap-2">
+              Go to your Superagent
+              <Sparkles className="h-3.5 w-3.5 text-cyan-300 animate-pulse" />
+            </span>
+            <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+          </button>
+        </div>
 
         {/* Tabs */}
         <div className="mt-7 flex items-center gap-1 justify-start overflow-x-auto no-scrollbar">

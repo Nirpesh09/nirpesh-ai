@@ -108,3 +108,26 @@
   }
   .animate-orb-float { animation: orb-float 2.4s ease-in-out infinite; }
 }
+
+/* Superagent animated gradient border */
+@keyframes superagent-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes superagent-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(34,211,238,0.35), 0 0 40px rgba(167,139,250,0.2); }
+  50%      { box-shadow: 0 0 30px rgba(34,211,238,0.55), 0 0 60px rgba(167,139,250,0.35); }
+}
+.superagent-btn { isolation: isolate; animation: superagent-glow 2.6s ease-in-out infinite; }
+.superagent-btn .superagent-border {
+  position: absolute;
+  inset: -2px;
+  border-radius: 18px;
+  padding: 2px;
+  background: conic-gradient(from 0deg, #22d3ee, #a78bfa, #f472b6, #22d3ee);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: superagent-spin 3.5s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+}
