@@ -93,7 +93,7 @@ export function onAuthChange(callback: AuthCallback): { data: { subscription: { 
   }
 
   // Also listen for Supabase changes
-  let data: { subscription: { unsubscribe: Unsubscribe } } | null = null;
+  let data: { data: { subscription: { unsubscribe: Unsubscribe } } } | null = null;
   try {
     data = getBackendAuth().onAuthStateChange((_event, session) => {
     // If Google session exists, it takes priority
@@ -130,7 +130,7 @@ export function onAuthChange(callback: AuthCallback): { data: { subscription: { 
       subscription: {
         unsubscribe: () => {
           listeners.delete(callback);
-          data?.subscription.unsubscribe();
+          data?.data.subscription.unsubscribe();
         },
       },
     },
