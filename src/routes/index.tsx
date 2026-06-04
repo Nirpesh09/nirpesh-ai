@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 
 const REPLIT_URL = "https://nirdesh-max-motion--nirpesh09.replit.app/";
@@ -40,7 +40,6 @@ export const Route = createFileRoute("/")({
 });
 
 function RedirectHome() {
-  const navigate = useNavigate();
   const didRun = useRef(false);
 
   useEffect(() => {
@@ -52,11 +51,7 @@ function RedirectHome() {
 
     const goDashboard = () => {
       if (window.location.pathname === "/dashboard") return;
-      navigate({ to: "/dashboard", replace: true }).catch(() => {
-        if (window.location.pathname !== "/dashboard") {
-          window.location.replace("/dashboard");
-        }
-      });
+      window.location.replace(`/dashboard${window.location.search || ""}`);
     };
 
     if (!alreadyShown && !redirecting) {
@@ -74,7 +69,7 @@ function RedirectHome() {
       goDashboard();
     }, 0);
     return () => window.clearTimeout(t);
-  }, [navigate]);
+  }, []);
 
   return (
     <div
