@@ -48,8 +48,14 @@ export async function signIn(email: string, password: string) {
 
 export async function signOut() {
   clearGoogleSession();
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  try {
+    const { error } = await getBackendAuth().signOut();
+    if (error) throw error;
+  } catch (error) {
+    if (!isBackendConfigError(error) && !(error instanceof Error && error.message.includes("temporarily unavailable"))) {
+      throw error;
+    }
+  }
 }
 
 export async function getUser(): Promise<AuthUser | null> {
@@ -57,7 +63,7 @@ export async function getUser(): Promise<AuthUser | null> {
   const google = loadGoogleSession();
   if (google) return googleToAuthUser(google);
 
-  const { data } = await supabase.auth.getUser();
+  const { data } = await getBackendAuth().getUser();
   if (!data.user) return null;
   return {
     id: data.user.id,
@@ -87,7 +93,9 @@ export function onAuthChange(callback: AuthCallback): { data: { subscription: { 
   }
 
   // Also listen for Supabase changes
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+  let data: { subscription: { unsubscribe: Unsubscribe } } | null = null;
+  try {
+    data = getBackendAuth().onAuthStateChange((_event, session) => {
     // If Google session exists, it takes priority
     const gUser = loadGoogleSession();
     if (gUser) {
@@ -106,7 +114,13 @@ export function onAuthChange(callback: AuthCallback): { data: { subscription: { 
     } else {
       callback(null);
     }
-  });
+    });
+  } catch (error) {
+    if (!isBackendConfigError(error) && !(error instanceof Error && error.message.includes("temporarily unavailable"))) {
+      console.error(error);
+    }
+    setTimeout(() => callback(google ? googleToAuthUser(google) : null), 0);
+  }
 
   // Register for Google auth events too
   listeners.add(callback);
@@ -116,7 +130,7 @@ export function onAuthChange(callback: AuthCallback): { data: { subscription: { 
       subscription: {
         unsubscribe: () => {
           listeners.delete(callback);
-          data.subscription.unsubscribe();
+          data?.subscription.unsubscribe();
         },
       },
     },
