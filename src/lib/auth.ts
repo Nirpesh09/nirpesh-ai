@@ -13,8 +13,25 @@ function googleToAuthUser(g: GoogleUser): AuthUser {
   return { id: g.id, email: g.email, displayName: g.name, picture: g.picture, provider: "google" };
 }
 
+function isBackendConfigError(error: unknown): boolean {
+  return error instanceof Error && error.message.includes("Missing Supabase environment variable");
+}
+
+function authUnavailableError(error: unknown) {
+  console.error(error);
+  return new Error("Authentication is temporarily unavailable. Please try again from the dashboard.");
+}
+
+function getBackendAuth() {
+  try {
+    return supabase.auth;
+  } catch (error) {
+    throw authUnavailableError(error);
+  }
+}
+
 export async function signUp(email: string, password: string, displayName?: string) {
-  const { data, error } = await supabase.auth.signUp({
+  const { data, error } = await getBackendAuth().signUp({
     email,
     password,
     options: displayName ? { data: { display_name: displayName } } : undefined,
@@ -24,7 +41,7 @@ export async function signUp(email: string, password: string, displayName?: stri
 }
 
 export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await getBackendAuth().signInWithPassword({ email, password });
   if (error) throw error;
   return data;
 }
