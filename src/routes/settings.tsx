@@ -151,7 +151,7 @@ function SettingsPage() {
 
       <main className="mx-auto max-w-3xl px-6 py-10 space-y-5">
         <div className="flex items-center gap-3 mb-8">
-          <Link to="/" className="p-2 rounded-xl hover:bg-[#1e293b] transition-colors text-[#475569]">
+          <Link to="/dashboard" className="p-2 rounded-xl hover:bg-[#1e293b] transition-colors text-[#475569]">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div>
@@ -214,7 +214,7 @@ function SettingsPage() {
             </>
           ) : (
             <Row label="Not signed in" description="Sign in to sync your apps and settings across devices">
-              <Link to="/" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-brand text-white text-xs font-medium">
+              <Link to="/dashboard" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-brand text-white text-xs font-medium">
                 <LogIn className="h-3.5 w-3.5" /> Sign In
               </Link>
             </Row>

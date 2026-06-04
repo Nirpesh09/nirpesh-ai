@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Loader2, Mail, Lock, User, Zap, KeyRound, ArrowLeft } from "lucide-react";
-import { signIn, signUp, notifyAuthChange } from "@/lib/auth";
+import { signIn, signUp, notifyAuthChange, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { renderGoogleButton, type GoogleUser } from "@/lib/google-auth";
-import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
   onClose: () => void;
@@ -55,11 +54,7 @@ export function AuthModal({ onClose, onSuccess }: Props) {
     if (!email) { setError("Enter your email first"); return; }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: true },
-      });
-      if (error) throw error;
+      await sendEmailOtp(email);
       setOtpSent(true);
       setTab("otp");
       setResendIn(45);
@@ -74,12 +69,7 @@ export function AuthModal({ onClose, onSuccess }: Props) {
     if (otp.length < 6) { setError("Enter the 6-digit code"); return; }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: "email",
-      });
-      if (error) throw error;
+      await verifyEmailOtp(email, otp);
       onSuccess();
       onClose();
     } catch (err) {

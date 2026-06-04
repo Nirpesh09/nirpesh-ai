@@ -34,15 +34,15 @@ export function SideMenu({ open, onClose }: { open: boolean; onClose: () => void
 
   const sections: Section[] = [
     { items: [
-      { label: "Home", icon: Home, to: "/" },
+      { label: "Home", icon: Home, to: "/dashboard" },
       { label: "Search", icon: Search, shortcut: "Ctrl K" },
       { label: "Resources", icon: BookOpen },
       { label: "Connectors", icon: Plug },
     ]},
     { title: "Projects", items: [
-      { label: "All projects", icon: LayoutGrid, to: "/" },
+      { label: "All projects", icon: LayoutGrid, to: "/dashboard" },
       { label: "Starred", icon: Star },
-      { label: "Created by me", icon: User, to: "/" },
+      { label: "Created by me", icon: User, to: "/dashboard" },
       { label: "Shared with me", icon: Users },
     ]},
   ];

@@ -13,8 +13,31 @@ function googleToAuthUser(g: GoogleUser): AuthUser {
   return { id: g.id, email: g.email, displayName: g.name, picture: g.picture, provider: "google" };
 }
 
+function isBackendConfigError(error: unknown): boolean {
+  return error instanceof Error && error.message.includes("Missing Supabase environment variable");
+}
+
+function authUnavailableError(error: unknown) {
+  if (!isBackendConfigError(error)) console.error(error);
+  return new Error("Authentication is temporarily unavailable. Please try again from the dashboard.");
+}
+
+function getBackendAuth() {
+  const hasBrowserConfig = Boolean(
+    import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  );
+  if (typeof window !== "undefined" && !hasBrowserConfig) {
+    throw new Error("Authentication is temporarily unavailable. Please try again from the dashboard.");
+  }
+  try {
+    return supabase.auth;
+  } catch (error) {
+    throw authUnavailableError(error);
+  }
+}
+
 export async function signUp(email: string, password: string, displayName?: string) {
-  const { data, error } = await supabase.auth.signUp({
+  const { data, error } = await getBackendAuth().signUp({
     email,
     password,
     options: displayName ? { data: { display_name: displayName } } : undefined,
@@ -24,15 +47,38 @@ export async function signUp(email: string, password: string, displayName?: stri
 }
 
 export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await getBackendAuth().signInWithPassword({ email, password });
   if (error) throw error;
   return data;
 }
 
+export async function sendEmailOtp(email: string) {
+  const { error } = await getBackendAuth().signInWithOtp({
+    email,
+    options: { shouldCreateUser: true },
+  });
+  if (error) throw error;
+}
+
+export async function verifyEmailOtp(email: string, token: string) {
+  const { error } = await getBackendAuth().verifyOtp({
+    email,
+    token,
+    type: "email",
+  });
+  if (error) throw error;
+}
+
 export async function signOut() {
   clearGoogleSession();
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  try {
+    const { error } = await getBackendAuth().signOut();
+    if (error) throw error;
+  } catch (error) {
+    if (!isBackendConfigError(error) && !(error instanceof Error && error.message.includes("temporarily unavailable"))) {
+      throw error;
+    }
+  }
 }
 
 export async function getUser(): Promise<AuthUser | null> {
@@ -40,7 +86,7 @@ export async function getUser(): Promise<AuthUser | null> {
   const google = loadGoogleSession();
   if (google) return googleToAuthUser(google);
 
-  const { data } = await supabase.auth.getUser();
+  const { data } = await getBackendAuth().getUser();
   if (!data.user) return null;
   return {
     id: data.user.id,
@@ -70,7 +116,9 @@ export function onAuthChange(callback: AuthCallback): { data: { subscription: { 
   }
 
   // Also listen for Supabase changes
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+  let data: { data: { subscription: { unsubscribe: Unsubscribe } } } | null = null;
+  try {
+    data = getBackendAuth().onAuthStateChange((_event, session) => {
     // If Google session exists, it takes priority
     const gUser = loadGoogleSession();
     if (gUser) {
@@ -89,7 +137,13 @@ export function onAuthChange(callback: AuthCallback): { data: { subscription: { 
     } else {
       callback(null);
     }
-  });
+    });
+  } catch (error) {
+    if (!isBackendConfigError(error) && !(error instanceof Error && error.message.includes("temporarily unavailable"))) {
+      console.error(error);
+    }
+    setTimeout(() => callback(google ? googleToAuthUser(google) : null), 0);
+  }
 
   // Register for Google auth events too
   listeners.add(callback);
@@ -99,7 +153,7 @@ export function onAuthChange(callback: AuthCallback): { data: { subscription: { 
       subscription: {
         unsubscribe: () => {
           listeners.delete(callback);
-          data.subscription.unsubscribe();
+          data?.data.subscription.unsubscribe();
         },
       },
     },

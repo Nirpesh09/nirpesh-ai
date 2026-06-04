@@ -379,7 +379,7 @@ function AppPage() {
           {gh.status === "done" && gh.url && (
             <a href={gh.url} target="_blank" rel="noreferrer" className="text-xs text-brand hover:underline">Open</a>
           )}
-          <Link to="/" className="text-sm text-[#64748b] hover:text-[#94a3b8] ml-1 transition-colors">← Back</Link>
+          <Link to="/dashboard" className="text-sm text-[#64748b] hover:text-[#94a3b8] ml-1 transition-colors">← Back</Link>
           <UserMenu />
         </div>
       </header>
