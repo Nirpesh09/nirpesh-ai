@@ -1,8 +1,33 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const REPLIT_URL = "https://nirdesh-max-motion--nirpesh09.replit.app/";
 const SESSION_KEY = "nirpesh.landing.shown.v1";
+const REDIRECTING_KEY = "nirpesh.root.redirecting.v1";
+
+function readSession(key: string) {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeSession(key: string, value: string) {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // Ignore unavailable sessionStorage; navigation must still continue.
+  }
+}
+
+function clearSession(key: string) {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Ignore unavailable sessionStorage.
+  }
+}
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -16,27 +41,27 @@ export const Route = createFileRoute("/")({
 
 function RedirectHome() {
   const navigate = useNavigate();
+  const didRun = useRef(false);
 
   useEffect(() => {
-    let alreadyShown = false;
-    try {
-      alreadyShown = sessionStorage.getItem(SESSION_KEY) === "1";
-    } catch {
-      /* sessionStorage unavailable — treat as first visit */
-    }
+    if (didRun.current) return;
+    didRun.current = true;
+
+    const alreadyShown = readSession(SESSION_KEY) === "1";
+    const redirecting = readSession(REDIRECTING_KEY) === "1";
 
     const goDashboard = () => {
+      if (window.location.pathname === "/dashboard") return;
       navigate({ to: "/dashboard", replace: true }).catch(() => {
-        window.location.replace("/dashboard");
+        if (window.location.pathname !== "/dashboard") {
+          window.location.replace("/dashboard");
+        }
       });
     };
 
-    if (!alreadyShown) {
-      try {
-        sessionStorage.setItem(SESSION_KEY, "1");
-      } catch {
-        /* ignore */
-      }
+    if (!alreadyShown && !redirecting) {
+      writeSession(SESSION_KEY, "1");
+      writeSession(REDIRECTING_KEY, "1");
       try {
         window.open(REPLIT_URL, "_blank", "noopener,noreferrer");
       } catch {
@@ -44,9 +69,11 @@ function RedirectHome() {
       }
     }
 
-    // Always end up on the dashboard.
-    const t = setTimeout(goDashboard, 0);
-    return () => clearTimeout(t);
+    const t = window.setTimeout(() => {
+      clearSession(REDIRECTING_KEY);
+      goDashboard();
+    }, 0);
+    return () => window.clearTimeout(t);
   }, [navigate]);
 
   return (
