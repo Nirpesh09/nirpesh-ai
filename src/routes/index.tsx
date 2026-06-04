@@ -63,7 +63,7 @@ function RedirectHome() {
       writeSession(SESSION_KEY, "1");
       writeSession(REDIRECTING_KEY, "1");
       try {
-        window.open(REPLIT_URL, "_blank", "noopener,noreferrer");
+        window.open(REPLIT_URL, "_blank", "noopener");
       } catch {
         /* popup blocked — ignore */
       }
