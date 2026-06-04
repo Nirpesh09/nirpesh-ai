@@ -46,6 +46,23 @@ export async function signIn(email: string, password: string) {
   return data;
 }
 
+export async function sendEmailOtp(email: string) {
+  const { error } = await getBackendAuth().signInWithOtp({
+    email,
+    options: { shouldCreateUser: true },
+  });
+  if (error) throw error;
+}
+
+export async function verifyEmailOtp(email: string, token: string) {
+  const { error } = await getBackendAuth().verifyOtp({
+    email,
+    token,
+    type: "email",
+  });
+  if (error) throw error;
+}
+
 export async function signOut() {
   clearGoogleSession();
   try {
