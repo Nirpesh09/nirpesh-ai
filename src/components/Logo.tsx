@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 
 export function Logo({ className = "", loading = false }: { className?: string; loading?: boolean }) {
   return (
-    <Link to="/" className={`flex items-center gap-2 ${className}`}>
+    <Link to="/dashboard" className={`flex items-center gap-2 ${className}`}>
       <span className="relative grid place-items-center h-8 w-8 rounded-xl bg-gradient-brand shadow-glow overflow-visible">
         {loading && (
           <>
