@@ -161,7 +161,7 @@ export function UserMenu() {
                   <span className="text-[10px] uppercase tracking-wider text-[#334155] font-semibold flex items-center gap-1">
                     <Clock className="h-3 w-3" /> Recent projects
                   </span>
-                  <Link to="/" onClick={() => setOpen(false)} className="text-[10px] text-[#475569] hover:text-[#94a3b8]">
+                  <Link to="/dashboard" onClick={() => setOpen(false)} className="text-[10px] text-[#475569] hover:text-[#94a3b8]">
                     View all
                   </Link>
                 </div>
