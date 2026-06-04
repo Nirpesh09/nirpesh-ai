@@ -18,11 +18,17 @@ function isBackendConfigError(error: unknown): boolean {
 }
 
 function authUnavailableError(error: unknown) {
-  console.error(error);
+  if (!isBackendConfigError(error)) console.error(error);
   return new Error("Authentication is temporarily unavailable. Please try again from the dashboard.");
 }
 
 function getBackendAuth() {
+  const hasBrowserConfig = Boolean(
+    import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  );
+  if (typeof window !== "undefined" && !hasBrowserConfig) {
+    throw new Error("Authentication is temporarily unavailable. Please try again from the dashboard.");
+  }
   try {
     return supabase.auth;
   } catch (error) {
