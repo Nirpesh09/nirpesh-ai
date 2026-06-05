@@ -203,6 +203,7 @@ function AppPage() {
   const { prompt: initial, model: initialModel } = Route.useSearch();
   const navigate = useNavigate();
   const chat = useServerFn(chatWithNirpesh);
+  const search = useServerFn(webSearch);
   const ghPush = useServerFn(pushToGithub);
 
   const existing = useRef<SavedApp | null>(null);
