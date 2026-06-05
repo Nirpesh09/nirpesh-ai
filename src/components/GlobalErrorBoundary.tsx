@@ -62,6 +62,7 @@ class ReactErrorBoundary extends Component<
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error(error, info);
+    reportError(error, "react-boundary");
     this.props.onError(error);
   }
 
