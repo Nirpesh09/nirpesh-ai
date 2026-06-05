@@ -121,28 +121,49 @@ function AiMessage({ content, isPlan }: { content: string; isPlan?: boolean }) {
 
 function ThinkingBubble({ stepIdx }: { stepIdx: number }) {
   return (
-    <div className="rounded-2xl rounded-tl-sm border border-[#1e293b] bg-[#0f1117] overflow-hidden">
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[#1e293b] bg-[#0a0d14]">
+    <div
+      className="rounded-2xl rounded-tl-sm border border-[#1e293b] bg-[#0f1117] overflow-hidden animate-fade-in"
+      style={{ animation: "nirpesh-fade-up 320ms ease-out both" }}
+    >
+      <div className="relative flex items-center gap-2.5 px-4 py-3 border-b border-[#1e293b] bg-[#0a0d14] overflow-hidden">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent, rgba(56,189,248,0.10), transparent)",
+            animation: "nirpesh-shimmer 2.2s linear infinite",
+          }}
+        />
         <div className="relative grid place-items-center h-6 w-6 rounded-lg bg-gradient-brand shrink-0">
           <span className="absolute inset-0 rounded-lg bg-gradient-brand opacity-60 animate-ping" />
           <span className="relative text-[11px] font-bold text-white z-10">N</span>
         </div>
-        <span className="text-xs font-medium text-[#64748b]">Building your app…</span>
-        <Loader2 className="h-3 w-3 animate-spin text-brand ml-auto" />
+        <span className="relative text-xs font-medium text-[#94a3b8]">
+          Nirpesh is thinking…
+        </span>
+        <Loader2 className="relative h-3 w-3 animate-spin text-brand ml-auto" />
       </div>
       <ul className="px-4 py-3 space-y-2">
         {THINK_STEPS.map((s, i) => {
           const done = i < stepIdx;
           const active = i === stepIdx;
           return (
-            <li key={s} className="flex items-center gap-2.5">
-              <span className={`grid place-items-center h-4 w-4 rounded-full shrink-0 transition-all ${
+            <li
+              key={s}
+              className="flex items-center gap-2.5 transition-all duration-300"
+              style={{
+                opacity: done || active ? 1 : 0.45,
+                transform: active ? "translateX(2px)" : "translateX(0)",
+              }}
+            >
+              <span className={`grid place-items-center h-4 w-4 rounded-full shrink-0 transition-all duration-300 ${
                 done ? "bg-gradient-brand" : active ? "border-2 border-brand bg-brand/10" : "border border-[#334155]"
               }`}>
                 {done && <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
                 {active && <span className="h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />}
               </span>
-              <span className={`text-xs ${done ? "text-[#475569] line-through" : active ? "text-[#e2e8f0] font-medium" : "text-[#334155]"}`}>{s}</span>
+              <span className={`text-xs transition-colors ${done ? "text-[#475569] line-through" : active ? "text-[#e2e8f0] font-medium" : "text-[#475569]"}`}>{s}</span>
             </li>
           );
         })}
@@ -150,9 +171,14 @@ function ThinkingBubble({ stepIdx }: { stepIdx: number }) {
       <div className="flex items-center gap-1 px-4 pb-3">
         {[0, 1, 2].map((i) => (
           <span key={i} className="h-1.5 w-1.5 rounded-full bg-brand"
-            style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+            style={{ animation: `nirpesh-bounce 1.2s ease-in-out ${i * 0.18}s infinite` }} />
         ))}
       </div>
+      <style>{`
+        @keyframes nirpesh-fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes nirpesh-shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        @keyframes nirpesh-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.5; } 40% { transform: translateY(-4px); opacity: 1; } }
+      `}</style>
     </div>
   );
 }

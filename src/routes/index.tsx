@@ -2,30 +2,23 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 
 const REPLIT_URL = "https://nirdesh-max-motion--nirpesh09.replit.app/";
-const SESSION_KEY = "nirpesh.landing.shown.v1";
-const REDIRECTING_KEY = "nirpesh.root.redirecting.v1";
+// Persistent flag — set on the very first visit so subsequent visits
+// (including new tabs) go straight to the dashboard.
+const VISITED_KEY = "nirpesh.visited.v1";
 
-function readSession(key: string) {
+function readVisited(): boolean {
   try {
-    return sessionStorage.getItem(key);
+    return localStorage.getItem(VISITED_KEY) === "1";
   } catch {
-    return null;
+    return false;
   }
 }
 
-function writeSession(key: string, value: string) {
+function markVisited() {
   try {
-    sessionStorage.setItem(key, value);
+    localStorage.setItem(VISITED_KEY, "1");
   } catch {
-    // Ignore unavailable sessionStorage; navigation must still continue.
-  }
-}
-
-function clearSession(key: string) {
-  try {
-    sessionStorage.removeItem(key);
-  } catch {
-    // Ignore unavailable sessionStorage.
+    /* ignore */
   }
 }
 
@@ -46,29 +39,21 @@ function RedirectHome() {
     if (didRun.current) return;
     didRun.current = true;
 
-    const alreadyShown = readSession(SESSION_KEY) === "1";
-    const redirecting = readSession(REDIRECTING_KEY) === "1";
+    const visited = readVisited();
 
-    const goDashboard = () => {
-      if (window.location.pathname === "/dashboard") return;
-      window.location.replace(`/dashboard${window.location.search || ""}`);
-    };
-
-    if (!alreadyShown && !redirecting) {
-      writeSession(SESSION_KEY, "1");
-      writeSession(REDIRECTING_KEY, "1");
-      try {
-        window.open(REPLIT_URL, "_blank", "noopener");
-      } catch {
-        /* popup blocked — ignore */
-      }
+    if (!visited) {
+      // First-ever visit: mark, then send the current tab to the Replit
+      // landing. Popups are blocked outside a user gesture, so we navigate
+      // the active tab directly — the most reliable path.
+      markVisited();
+      window.location.replace(REPLIT_URL);
+      return;
     }
 
-    const t = window.setTimeout(() => {
-      clearSession(REDIRECTING_KEY);
-      goDashboard();
-    }, 0);
-    return () => window.clearTimeout(t);
+    // Returning visitor — go straight to the dashboard.
+    if (window.location.pathname !== "/dashboard") {
+      window.location.replace(`/dashboard${window.location.search || ""}`);
+    }
   }, []);
 
   return (
@@ -86,7 +71,18 @@ function RedirectHome() {
       <div style={{ textAlign: "center" }}>
         <div
           style={{
-            fontSize: 14,
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            border: "3px solid rgba(255,255,255,0.15)",
+            borderTopColor: "#22d3ee",
+            margin: "0 auto 18px",
+            animation: "nirpesh-spin 0.9s linear infinite",
+          }}
+        />
+        <div
+          style={{
+            fontSize: 13,
             letterSpacing: "0.3em",
             textTransform: "uppercase",
             color: "rgba(255,255,255,0.55)",
@@ -97,10 +93,11 @@ function RedirectHome() {
         </div>
         <a
           href="/dashboard"
-          style={{ color: "#22d3ee", fontSize: 18, textDecoration: "underline" }}
+          style={{ color: "#22d3ee", fontSize: 16, textDecoration: "underline" }}
         >
           Continue to dashboard →
         </a>
+        <style>{`@keyframes nirpesh-spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </div>
   );
