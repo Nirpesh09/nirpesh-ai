@@ -583,8 +583,22 @@ function AppPage() {
                 <ListChecks className="h-3.5 w-3.5" />
                 {planMode ? "Plan mode ON" : "Plan first"}
               </button>
+              <button
+                type="button"
+                onClick={() => setSearchMode((v) => !v)}
+                title="Augment the next reply with live web search results"
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
+                  searchMode
+                    ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-300"
+                    : "border-[#1e293b] bg-[#0f1117] text-[#475569] hover:text-[#64748b]"
+                }`}
+              >
+                <Globe className="h-3.5 w-3.5" />
+                {searchMode ? "Web search ON" : "Web search"}
+              </button>
               {chatMode && <span className="text-[10px] text-[#475569]">Nirpesh will chat — no code yet</span>}
               {planMode && <span className="text-[10px] text-[#475569]">AI will plan before building</span>}
+              {searchMode && <span className="text-[10px] text-cyan-400/70">Live results via Google-style search</span>}
             </div>
 
             <div className="rounded-xl border border-[#1e293b] bg-[#0f1117] focus-within:border-brand/40 transition-colors">
