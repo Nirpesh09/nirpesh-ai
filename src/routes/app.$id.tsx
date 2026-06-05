@@ -217,6 +217,7 @@ function AppPage() {
   const [tab, setTab] = useState<"preview" | "code">("preview");
   const [planMode, setPlanMode] = useState(false);
   const [chatMode, setChatMode] = useState(false);
+  const [searchMode, setSearchMode] = useState(false);
   const [credits, setCredits] = useState(10);
   const [outOfCredits, setOutOfCredits] = useState(false);
 
