@@ -1,5 +1,6 @@
 import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle, Home, RotateCcw } from "lucide-react";
+import { installGlobalErrorReporter, reportError } from "@/lib/error-reporter";
 
 type BoundaryState = {
   error: Error | null;
