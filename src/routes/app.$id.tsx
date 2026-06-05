@@ -290,11 +290,16 @@ function AppPage() {
 
   const previewHtml = useMemo(() => injectEditScript(html), [html]);
 
-  const run = async (text: string, opts: { isPlan?: boolean; isChat?: boolean } = {}) => {
-    const { isPlan = false, isChat = false } = opts;
+  const run = async (text: string, opts: { isPlan?: boolean; isChat?: boolean; useSearch?: boolean } = {}) => {
+    const { isPlan = false, isChat = false, useSearch = false } = opts;
     if (!hasCredits()) { setOutOfCredits(true); return; }
 
-    const userMsg: ChatMessage = { role: "user", content: text };
+    // /search <query> command always triggers web search regardless of toggle.
+    const slashMatch = text.match(/^\/search\s+(.+)$/i);
+    const shouldSearch = useSearch || !!slashMatch;
+    const visibleText = slashMatch ? slashMatch[1] : text;
+
+    const userMsg: ChatMessage = { role: "user", content: visibleText };
     const next = [...messages, userMsg];
     setMessages(next);
     setInput("");
@@ -303,18 +308,52 @@ function AppPage() {
     deductCredit();
     setCredits(getCredits());
 
-    let actualText = text;
+    let actualText = visibleText;
     if (isPlan) {
-      actualText = `Before building the app, create a detailed plan for: "${text}". List the components, features, layout, color scheme, and interactions you will include. Number each item. Do NOT write any code yet — just the plan. End with "Ready to build when you confirm."`;
+      actualText = `Before building the app, create a detailed plan for: "${visibleText}". List the components, features, layout, color scheme, and interactions you will include. Number each item. Do NOT write any code yet — just the plan. End with "Ready to build when you confirm."`;
     }
 
-    const queryMsgs: ChatMessage[] = isPlan
+    // Optional web search step — prepend results as a system-style assistant context.
+    let searchContext: ChatMessage | null = null;
+    let searchSources: WebSearchResult[] = [];
+    if (shouldSearch) {
+      try {
+        const r = await search({ data: { query: visibleText, limit: 5 } });
+        searchSources = r.results;
+        if (r.error) {
+          searchContext = { role: "system", content: `Web search note: ${r.error}` };
+        } else if (r.results.length) {
+          const formatted = r.results
+            .map((res, i) => `[${i + 1}] ${res.title}\n${res.url}\n${res.description}`)
+            .join("\n\n");
+          searchContext = {
+            role: "system",
+            content: `Live web search results for "${r.query}":\n\n${formatted}\n\nUse these as up-to-date references. Cite them inline like [1], [2] when relevant.`,
+          };
+        }
+      } catch (err) {
+        searchContext = {
+          role: "system",
+          content: `Web search failed: ${err instanceof Error ? err.message : "unknown"}`,
+        };
+      }
+    }
+
+    const baseMsgs: ChatMessage[] = isPlan
       ? [...messages, { role: "user", content: actualText }]
-      : next;
+      : [...messages, { role: "user", content: actualText }];
+    const queryMsgs: ChatMessage[] = searchContext ? [searchContext, ...baseMsgs] : baseMsgs;
 
     try {
       const res = await chat({ data: { messages: queryMsgs, model, mode: isChat ? "chat" : "build" } });
-      const assistantMsg: ChatMessage = { role: "assistant", content: res.content };
+      let content = res.content;
+      if (searchSources.length && isChat) {
+        const srcList = searchSources
+          .map((s, i) => `[${i + 1}] [${s.title}](${s.url})`)
+          .join("\n");
+        content = `${content}\n\n**Sources:**\n${srcList}`;
+      }
+      const assistantMsg: ChatMessage = { role: "assistant", content };
       const finalMsgs = [...next, assistantMsg];
       setMessages(finalMsgs);
 
@@ -326,8 +365,8 @@ function AppPage() {
         const now = Date.now();
         const saved: SavedApp = {
           id,
-          title: existing.current?.title ?? titleFromPrompt(text),
-          prompt: existing.current?.prompt ?? text,
+          title: existing.current?.title ?? titleFromPrompt(visibleText),
+          prompt: existing.current?.prompt ?? visibleText,
           html: code,
           messages: finalMsgs,
           createdAt: existing.current?.createdAt ?? now,
