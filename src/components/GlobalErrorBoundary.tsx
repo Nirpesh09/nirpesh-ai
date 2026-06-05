@@ -85,13 +85,18 @@ export function GlobalErrorBoundary({ children }: { children: ReactNode }) {
   const [resetKey, setResetKey] = useState(0);
 
   useEffect(() => {
+    installGlobalErrorReporter();
     const onError = (event: ErrorEvent) => {
       event.preventDefault();
-      setGlobalError(normalizeError(event.error ?? event.message));
+      const err = normalizeError(event.error ?? event.message);
+      reportError(err, "window.onerror");
+      setGlobalError(err);
     };
     const onRejection = (event: PromiseRejectionEvent) => {
       event.preventDefault();
-      setGlobalError(normalizeError(event.reason));
+      const err = normalizeError(event.reason);
+      reportError(err, "unhandledrejection");
+      setGlobalError(err);
     };
     window.addEventListener("error", onError);
     window.addEventListener("unhandledrejection", onRejection);
