@@ -396,7 +396,7 @@ function AppPage() {
     e.preventDefault();
     const text = input.trim();
     if (!text || loading) return;
-    run(text, { isPlan: planMode, isChat: chatMode });
+    run(text, { isPlan: planMode, isChat: chatMode, useSearch: searchMode });
   };
 
   const saveTextEdit = () => {
