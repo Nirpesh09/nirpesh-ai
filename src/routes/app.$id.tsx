@@ -353,7 +353,7 @@ function AppPage() {
     const queryMsgs: ChatMessage[] = searchContext ? [searchContext, ...baseMsgs] : baseMsgs;
 
     try {
-      const res = await chat({ data: { messages: queryMsgs, model, mode: isChat ? "chat" : "build" } });
+      const res = await chat({ data: { messages: queryMsgs, model, mode: isChat ? "chat" : "build", attachments: files } });
       let content = res.content;
       if (searchSources.length && isChat) {
         const srcList = searchSources
