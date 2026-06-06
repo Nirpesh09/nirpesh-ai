@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { X, Loader2, Mail, Lock, User, Zap, KeyRound, ArrowLeft } from "lucide-react";
-import { signIn, signUp, notifyAuthChange, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
-import { renderGoogleButton, type GoogleUser } from "@/lib/google-auth";
+import { signIn, signUp, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
+import { lovable } from "@/integrations/lovable";
 
 type Props = {
   onClose: () => void;
@@ -16,31 +16,33 @@ export function AuthModal({ onClose, onSuccess }: Props) {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
+  const [, setOtpSent] = useState(false);
   const [resendIn, setResendIn] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [googleReady, setGoogleReady] = useState(false);
 
-  const googleBtnRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!googleBtnRef.current) return;
-    renderGoogleButton(
-      googleBtnRef.current,
-      (_user: GoogleUser) => {
-        // Notify the whole app that auth changed
-        notifyAuthChange();
-        onSuccess();
-        onClose();
-      },
-      (_err) => {
-        setError("Google Sign-In failed. Please check the setup or use email instead.");
-      },
-    );
-    setGoogleReady(true);
-  }, [onSuccess, onClose]);
+  const handleGoogle = async () => {
+    setError(null);
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin + "/dashboard",
+      });
+      if (result.error) {
+        setError(result.error instanceof Error ? result.error.message : "Google sign-in failed");
+        setGoogleLoading(false);
+        return;
+      }
+      if (result.redirected) return; // browser navigating away
+      onSuccess();
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Google sign-in failed");
+      setGoogleLoading(false);
+    }
+  };
 
   // Countdown for OTP resend
   useEffect(() => {
