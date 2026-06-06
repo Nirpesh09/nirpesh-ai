@@ -656,21 +656,58 @@ function AppPage() {
               {searchMode && <span className="text-[10px] text-cyan-400/70">Live results via Google-style search</span>}
             </div>
 
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {attachments.map((a, i) => (
+                  <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-[#1e293b] bg-[#0f1117] text-[11px] text-[#94a3b8] max-w-[180px]">
+                    {a.mime.startsWith("image/") ? (
+                      <img src={a.dataUrl} alt={a.name} className="h-5 w-5 object-cover rounded" />
+                    ) : (
+                      <FileText className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+                    )}
+                    <span className="truncate">{a.name}</span>
+                    <button type="button" onClick={() => removeAttachment(i)} className="text-[#475569] hover:text-red-400">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="rounded-xl border border-[#1e293b] bg-[#0f1117] focus-within:border-brand/40 transition-colors">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(e); } }}
                 rows={2}
-                placeholder={loading ? "Nirpesh is working…" : chatMode ? "Chat with Nirpesh about your app…" : planMode ? "Describe your app — Nirpesh will plan it first…" : "Ask Nirpesh to build or change something…"}
+                placeholder={loading ? "Nirpesh is working…" : chatMode ? "Chat with Nirpesh about your app…" : planMode ? "Describe your app — Nirpesh will plan it first…" : "Ask Nirpesh to build, change, or analyze a file…"}
                 className="w-full bg-transparent resize-none px-3 py-2.5 text-sm outline-none placeholder:text-[#334155] text-[#e2e8f0]"
                 disabled={loading}
               />
               <div className="flex items-center justify-between p-1.5 gap-2">
-                <ModelPicker value={model} onChange={pickModel} />
+                <div className="flex items-center gap-1">
+                  <ModelPicker value={model} onChange={pickModel} />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,text/*,.txt,.md,.json,.csv,.xml,.yml,.yaml,.js,.ts,.tsx,.jsx,.css,.html,.py,.sql"
+                    className="hidden"
+                    onChange={(e) => onFilesPicked(e.target.files)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={loading}
+                    title="Attach images or files"
+                    className="grid place-items-center h-8 w-8 rounded-lg hover:bg-[#1e293b] text-[#64748b] hover:text-cyan-300 transition-colors disabled:opacity-40"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </button>
+                </div>
                 <button
                   type="submit"
-                  disabled={!input.trim() || loading || outOfCredits}
+                  disabled={(!input.trim() && attachments.length === 0) || loading || outOfCredits}
                   className="grid place-items-center h-8 w-8 rounded-lg bg-gradient-brand text-white disabled:opacity-30 hover:scale-105 transition-transform shadow-glow"
                 >
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" strokeWidth={2.5} />}
