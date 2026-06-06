@@ -403,9 +403,56 @@ function AppPage() {
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const text = input.trim();
-    if (!text || loading) return;
-    run(text, { isPlan: planMode, isChat: chatMode, useSearch: searchMode });
+    if ((!text && attachments.length === 0) || loading) return;
+    run(text || "Please analyze the attached file(s).", { isPlan: planMode, isChat: chatMode, useSearch: searchMode });
   };
+
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(r.error ?? new Error("read failed"));
+      r.readAsDataURL(file);
+    });
+
+  const readFileAsText = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(r.error ?? new Error("read failed"));
+      r.readAsText(file);
+    });
+
+  const onFilesPicked = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    const out: Attachment[] = [];
+    for (const file of Array.from(files).slice(0, 5)) {
+      if (file.size > 8 * 1024 * 1024) {
+        setMessages((m) => [...m, { role: "assistant", content: `⚠️ "${file.name}" is too large (max 8 MB).` }]);
+        continue;
+      }
+      if (file.type.startsWith("image/")) {
+        const dataUrl = await readFileAsDataUrl(file);
+        out.push({ name: file.name, mime: file.type, dataUrl });
+      } else if (
+        file.type.startsWith("text/") ||
+        /\.(txt|md|json|csv|xml|yml|yaml|js|ts|tsx|jsx|css|html|py|sql)$/i.test(file.name)
+      ) {
+        const text = await readFileAsText(file);
+        const snippet = text.slice(0, 20000);
+        const dataUrl = `data:text/plain;base64,${btoa(unescape(encodeURIComponent(snippet)))}`;
+        // Inline the text directly so non-vision models can read it too
+        setInput((prev) => `${prev}${prev ? "\n\n" : ""}File "${file.name}":\n\`\`\`\n${snippet}\n\`\`\``);
+        out.push({ name: file.name, mime: "text/plain", dataUrl });
+      } else {
+        setMessages((m) => [...m, { role: "assistant", content: `⚠️ "${file.name}" (${file.type || "unknown"}) is not supported. Try an image or a text file.` }]);
+      }
+    }
+    if (out.length) setAttachments((a) => [...a, ...out].slice(0, 5));
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeAttachment = (i: number) => setAttachments((a) => a.filter((_, idx) => idx !== i));
 
   const saveTextEdit = () => {
     if (!picked) return;
