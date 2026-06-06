@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { X, Loader2, Mail, Lock, User, Zap, KeyRound, ArrowLeft } from "lucide-react";
-import { signIn, signUp, notifyAuthChange, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
-import { renderGoogleButton, type GoogleUser } from "@/lib/google-auth";
+import { signIn, signUp, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
+import { lovable } from "@/integrations/lovable";
 
 type Props = {
   onClose: () => void;
@@ -16,31 +16,33 @@ export function AuthModal({ onClose, onSuccess }: Props) {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
+  const [, setOtpSent] = useState(false);
   const [resendIn, setResendIn] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [googleReady, setGoogleReady] = useState(false);
 
-  const googleBtnRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!googleBtnRef.current) return;
-    renderGoogleButton(
-      googleBtnRef.current,
-      (_user: GoogleUser) => {
-        // Notify the whole app that auth changed
-        notifyAuthChange();
-        onSuccess();
-        onClose();
-      },
-      (_err) => {
-        setError("Google Sign-In failed. Please check the setup or use email instead.");
-      },
-    );
-    setGoogleReady(true);
-  }, [onSuccess, onClose]);
+  const handleGoogle = async () => {
+    setError(null);
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin + "/dashboard",
+      });
+      if (result.error) {
+        setError(result.error instanceof Error ? result.error.message : "Google sign-in failed");
+        setGoogleLoading(false);
+        return;
+      }
+      if (result.redirected) return; // browser navigating away
+      onSuccess();
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Google sign-in failed");
+      setGoogleLoading(false);
+    }
+  };
 
   // Countdown for OTP resend
   useEffect(() => {
@@ -167,15 +169,25 @@ export function AuthModal({ onClose, onSuccess }: Props) {
           </div>
         ) : (
           <>
-            {/* Google Sign-In Button rendered by Google SDK */}
-            <div
-              ref={googleBtnRef}
-              className="w-full mb-4 flex items-center justify-center overflow-hidden rounded-xl"
-              style={{ minHeight: "44px" }}
-            />
-            {!googleReady && (
-              <div className="w-full mb-4 h-11 rounded-xl bg-[#1e293b] animate-pulse" />
-            )}
+            {/* Google Sign-In via Lovable managed OAuth */}
+            <button
+              type="button"
+              onClick={handleGoogle}
+              disabled={googleLoading}
+              className="w-full mb-4 h-11 rounded-xl border border-[#1e293b] bg-white text-[#0a0d14] text-sm font-medium flex items-center justify-center gap-2 hover:bg-white/90 disabled:opacity-60"
+            >
+              {googleLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
+                  <path fill="#4285F4" d="M22.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.75h3.57c2.08-1.92 3.22-4.74 3.22-8.3z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.75c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.15-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.85 14.12A6.96 6.96 0 015.5 12c0-.74.13-1.45.35-2.12V7.04H2.18A11 11 0 001 12c0 1.78.43 3.46 1.18 4.96l3.67-2.84z"/>
+                  <path fill="#EA4335" d="M12 5.4c1.62 0 3.07.56 4.21 1.65l3.16-3.16C17.45 2.1 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.04l3.67 2.84C6.71 7.33 9.14 5.4 12 5.4z"/>
+                </svg>
+              )}
+              Continue with Google
+            </button>
 
             <div className="flex items-center gap-3 mb-4">
               <div className="flex-1 h-px bg-[#1e293b]" />

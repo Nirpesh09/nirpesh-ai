@@ -1,15 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { chatWithNirpesh, type ChatMessage } from "@/lib/mistral.functions";
+import { chatWithNirpesh, type ChatMessage, type Attachment } from "@/lib/mistral.functions";
 import { pushToGithub } from "@/lib/github.functions";
 import { webSearch, type WebSearchResult } from "@/lib/web-search.functions";
 import { Logo } from "@/components/Logo";
 import { UserMenu } from "@/components/UserMenu";
 import { ModelPicker } from "@/components/ModelPicker";
 import {
-  ArrowUp, Eye, Code2, RefreshCw, ExternalLink, Check, Loader2,
-  MousePointerClick, Github, X, Wand2, ListChecks, Zap, AlertTriangle, MessageSquare, Globe,
+  ArrowUp, Eye, Code2, RefreshCw, ExternalLink, Loader2,
+  MousePointerClick, Github, X, Wand2, ListChecks, Zap, AlertTriangle, MessageSquare, Globe, Paperclip, FileText,
 } from "lucide-react";
 import { getApp, saveApp, titleFromPrompt, type SavedApp } from "@/lib/apps";
 import { loadProfile, type Profile } from "@/lib/profile";
@@ -31,7 +31,8 @@ const THINK_STEPS = [
   "Reading your prompt…",
   "Sketching the layout…",
   "Picking colors & typography…",
-  "Writing the HTML & CSS…",
+  "Writing styles…",
+  "Writing components…",
   "Wiring up interactions…",
   "Polishing the details…",
 ];
@@ -220,6 +221,8 @@ function AppPage() {
   const [searchMode, setSearchMode] = useState(false);
   const [credits, setCredits] = useState(10);
   const [outOfCredits, setOutOfCredits] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sentInitial = useRef(false);
   const [profile, setProfile] = useState<Profile>({ name: "You", emoji: "🦊", color: "#a855f7" });
@@ -290,8 +293,8 @@ function AppPage() {
 
   const previewHtml = useMemo(() => injectEditScript(html), [html]);
 
-  const run = async (text: string, opts: { isPlan?: boolean; isChat?: boolean; useSearch?: boolean } = {}) => {
-    const { isPlan = false, isChat = false, useSearch = false } = opts;
+  const run = async (text: string, opts: { isPlan?: boolean; isChat?: boolean; useSearch?: boolean; files?: Attachment[] } = {}) => {
+    const { isPlan = false, isChat = false, useSearch = false, files = attachments } = opts;
     if (!hasCredits()) { setOutOfCredits(true); return; }
 
     // /search <query> command always triggers web search regardless of toggle.
@@ -299,10 +302,15 @@ function AppPage() {
     const shouldSearch = useSearch || !!slashMatch;
     const visibleText = slashMatch ? slashMatch[1] : text;
 
-    const userMsg: ChatMessage = { role: "user", content: visibleText };
+    // Decorate user message with attachment summary
+    const attachSummary = files.length
+      ? "\n\n📎 Attached: " + files.map((f) => `${f.name} (${f.mime})`).join(", ")
+      : "";
+    const userMsg: ChatMessage = { role: "user", content: visibleText + attachSummary };
     const next = [...messages, userMsg];
     setMessages(next);
     setInput("");
+    setAttachments([]);
     setLoading(true);
 
     deductCredit();
@@ -345,7 +353,7 @@ function AppPage() {
     const queryMsgs: ChatMessage[] = searchContext ? [searchContext, ...baseMsgs] : baseMsgs;
 
     try {
-      const res = await chat({ data: { messages: queryMsgs, model, mode: isChat ? "chat" : "build" } });
+      const res = await chat({ data: { messages: queryMsgs, model, mode: isChat ? "chat" : "build", attachments: files } });
       let content = res.content;
       if (searchSources.length && isChat) {
         const srcList = searchSources
@@ -395,9 +403,56 @@ function AppPage() {
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const text = input.trim();
-    if (!text || loading) return;
-    run(text, { isPlan: planMode, isChat: chatMode, useSearch: searchMode });
+    if ((!text && attachments.length === 0) || loading) return;
+    run(text || "Please analyze the attached file(s).", { isPlan: planMode, isChat: chatMode, useSearch: searchMode });
   };
+
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(r.error ?? new Error("read failed"));
+      r.readAsDataURL(file);
+    });
+
+  const readFileAsText = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(r.error ?? new Error("read failed"));
+      r.readAsText(file);
+    });
+
+  const onFilesPicked = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    const out: Attachment[] = [];
+    for (const file of Array.from(files).slice(0, 5)) {
+      if (file.size > 8 * 1024 * 1024) {
+        setMessages((m) => [...m, { role: "assistant", content: `⚠️ "${file.name}" is too large (max 8 MB).` }]);
+        continue;
+      }
+      if (file.type.startsWith("image/")) {
+        const dataUrl = await readFileAsDataUrl(file);
+        out.push({ name: file.name, mime: file.type, dataUrl });
+      } else if (
+        file.type.startsWith("text/") ||
+        /\.(txt|md|json|csv|xml|yml|yaml|js|ts|tsx|jsx|css|html|py|sql)$/i.test(file.name)
+      ) {
+        const text = await readFileAsText(file);
+        const snippet = text.slice(0, 20000);
+        const dataUrl = `data:text/plain;base64,${btoa(unescape(encodeURIComponent(snippet)))}`;
+        // Inline the text directly so non-vision models can read it too
+        setInput((prev) => `${prev}${prev ? "\n\n" : ""}File "${file.name}":\n\`\`\`\n${snippet}\n\`\`\``);
+        out.push({ name: file.name, mime: "text/plain", dataUrl });
+      } else {
+        setMessages((m) => [...m, { role: "assistant", content: `⚠️ "${file.name}" (${file.type || "unknown"}) is not supported. Try an image or a text file.` }]);
+      }
+    }
+    if (out.length) setAttachments((a) => [...a, ...out].slice(0, 5));
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeAttachment = (i: number) => setAttachments((a) => a.filter((_, idx) => idx !== i));
 
   const saveTextEdit = () => {
     if (!picked) return;
@@ -601,21 +656,58 @@ function AppPage() {
               {searchMode && <span className="text-[10px] text-cyan-400/70">Live results via Google-style search</span>}
             </div>
 
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {attachments.map((a, i) => (
+                  <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-[#1e293b] bg-[#0f1117] text-[11px] text-[#94a3b8] max-w-[180px]">
+                    {a.mime.startsWith("image/") ? (
+                      <img src={a.dataUrl} alt={a.name} className="h-5 w-5 object-cover rounded" />
+                    ) : (
+                      <FileText className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+                    )}
+                    <span className="truncate">{a.name}</span>
+                    <button type="button" onClick={() => removeAttachment(i)} className="text-[#475569] hover:text-red-400">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="rounded-xl border border-[#1e293b] bg-[#0f1117] focus-within:border-brand/40 transition-colors">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(e); } }}
                 rows={2}
-                placeholder={loading ? "Nirpesh is working…" : chatMode ? "Chat with Nirpesh about your app…" : planMode ? "Describe your app — Nirpesh will plan it first…" : "Ask Nirpesh to build or change something…"}
+                placeholder={loading ? "Nirpesh is working…" : chatMode ? "Chat with Nirpesh about your app…" : planMode ? "Describe your app — Nirpesh will plan it first…" : "Ask Nirpesh to build, change, or analyze a file…"}
                 className="w-full bg-transparent resize-none px-3 py-2.5 text-sm outline-none placeholder:text-[#334155] text-[#e2e8f0]"
                 disabled={loading}
               />
               <div className="flex items-center justify-between p-1.5 gap-2">
-                <ModelPicker value={model} onChange={pickModel} />
+                <div className="flex items-center gap-1">
+                  <ModelPicker value={model} onChange={pickModel} />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,text/*,.txt,.md,.json,.csv,.xml,.yml,.yaml,.js,.ts,.tsx,.jsx,.css,.html,.py,.sql"
+                    className="hidden"
+                    onChange={(e) => onFilesPicked(e.target.files)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={loading}
+                    title="Attach images or files"
+                    className="grid place-items-center h-8 w-8 rounded-lg hover:bg-[#1e293b] text-[#64748b] hover:text-cyan-300 transition-colors disabled:opacity-40"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </button>
+                </div>
                 <button
                   type="submit"
-                  disabled={!input.trim() || loading || outOfCredits}
+                  disabled={(!input.trim() && attachments.length === 0) || loading || outOfCredits}
                   className="grid place-items-center h-8 w-8 rounded-lg bg-gradient-brand text-white disabled:opacity-30 hover:scale-105 transition-transform shadow-glow"
                 >
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" strokeWidth={2.5} />}
