@@ -221,6 +221,8 @@ function AppPage() {
   const [searchMode, setSearchMode] = useState(false);
   const [credits, setCredits] = useState(10);
   const [outOfCredits, setOutOfCredits] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sentInitial = useRef(false);
   const [profile, setProfile] = useState<Profile>({ name: "You", emoji: "🦊", color: "#a855f7" });
