@@ -9,7 +9,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { ModelPicker } from "@/components/ModelPicker";
 import {
   ArrowUp, Eye, Code2, RefreshCw, ExternalLink, Loader2,
-  MousePointerClick, Github, X, Wand2, ListChecks, Zap, AlertTriangle, MessageSquare, Globe, Paperclip, FileText, Image as ImageIcon,
+  MousePointerClick, Github, X, Wand2, ListChecks, Zap, AlertTriangle, MessageSquare, Globe, Paperclip, FileText,
 } from "lucide-react";
 import { getApp, saveApp, titleFromPrompt, type SavedApp } from "@/lib/apps";
 import { loadProfile, type Profile } from "@/lib/profile";
