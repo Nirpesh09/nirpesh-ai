@@ -293,8 +293,8 @@ function AppPage() {
 
   const previewHtml = useMemo(() => injectEditScript(html), [html]);
 
-  const run = async (text: string, opts: { isPlan?: boolean; isChat?: boolean; useSearch?: boolean } = {}) => {
-    const { isPlan = false, isChat = false, useSearch = false } = opts;
+  const run = async (text: string, opts: { isPlan?: boolean; isChat?: boolean; useSearch?: boolean; files?: Attachment[] } = {}) => {
+    const { isPlan = false, isChat = false, useSearch = false, files = attachments } = opts;
     if (!hasCredits()) { setOutOfCredits(true); return; }
 
     // /search <query> command always triggers web search regardless of toggle.
@@ -302,10 +302,15 @@ function AppPage() {
     const shouldSearch = useSearch || !!slashMatch;
     const visibleText = slashMatch ? slashMatch[1] : text;
 
-    const userMsg: ChatMessage = { role: "user", content: visibleText };
+    // Decorate user message with attachment summary
+    const attachSummary = files.length
+      ? "\n\n📎 Attached: " + files.map((f) => `${f.name} (${f.mime})`).join(", ")
+      : "";
+    const userMsg: ChatMessage = { role: "user", content: visibleText + attachSummary };
     const next = [...messages, userMsg];
     setMessages(next);
     setInput("");
+    setAttachments([]);
     setLoading(true);
 
     deductCredit();
