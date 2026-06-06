@@ -1,15 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { chatWithNirpesh, type ChatMessage } from "@/lib/mistral.functions";
+import { chatWithNirpesh, type ChatMessage, type Attachment } from "@/lib/mistral.functions";
 import { pushToGithub } from "@/lib/github.functions";
 import { webSearch, type WebSearchResult } from "@/lib/web-search.functions";
 import { Logo } from "@/components/Logo";
 import { UserMenu } from "@/components/UserMenu";
 import { ModelPicker } from "@/components/ModelPicker";
 import {
-  ArrowUp, Eye, Code2, RefreshCw, ExternalLink, Check, Loader2,
-  MousePointerClick, Github, X, Wand2, ListChecks, Zap, AlertTriangle, MessageSquare, Globe,
+  ArrowUp, Eye, Code2, RefreshCw, ExternalLink, Loader2,
+  MousePointerClick, Github, X, Wand2, ListChecks, Zap, AlertTriangle, MessageSquare, Globe, Paperclip, FileText, Image as ImageIcon,
 } from "lucide-react";
 import { getApp, saveApp, titleFromPrompt, type SavedApp } from "@/lib/apps";
 import { loadProfile, type Profile } from "@/lib/profile";
@@ -31,7 +31,8 @@ const THINK_STEPS = [
   "Reading your prompt…",
   "Sketching the layout…",
   "Picking colors & typography…",
-  "Writing the HTML & CSS…",
+  "Writing styles…",
+  "Writing components…",
   "Wiring up interactions…",
   "Polishing the details…",
 ];
