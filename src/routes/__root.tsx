@@ -7,10 +7,8 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useState } from "react";
 import appCss from "../styles.css?url";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
-import { LoadingScreen } from "@/components/LoadingScreen";
 
 function NotFoundComponent() {
   return (
@@ -115,15 +113,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const [loading, setLoading] = useState(true);
 
   return (
     <QueryClientProvider client={queryClient}>
       <GlobalErrorBoundary>
-        {loading && <LoadingScreen onDone={() => setLoading(false)} />}
-        <div style={{ visibility: loading ? "hidden" : "visible" }}>
-          <Outlet />
-        </div>
+        <Outlet />
       </GlobalErrorBoundary>
     </QueryClientProvider>
   );
